@@ -1,0 +1,2435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="artifact-type" content="tool">
+  <meta name="design-style" content="handbook">
+  <title>Code de la Route — Speed Limit &amp; Safety Distance Calculator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@1.43.0/dist/umd/lucide.min.js"></script>
+  <style>
+    :root {
+      color-scheme: light;
+
+      /* Page and surfaces (Handbook) */
+      --background: #ffffff;
+      --surface-container-low: #f3f2f1;
+      --surface-container: #e8e7e5;
+      --surface-container-high: #dbdad9;
+
+      /* Ink */
+      --on-surface: #0b0c0c;
+      --on-surface-variant: #505a5f;
+
+      /* Rules */
+      --outline: #0b0c0c;
+      --outline-variant: #b1b4b6;
+
+      /* Accents */
+      --primary: #162e51;
+      --on-primary: #ffffff;
+      --primary-container: #d2e2f1;
+      --on-primary-container: #0c2d4a;
+      --secondary: #4c2c92;
+      --tertiary: #1a569e;
+      --error: #d4351c;
+      --on-error: #ffffff;
+
+      /* Data series */
+      --data-1: #1a569e;
+      --data-2: #c75a0a;
+      --data-3: #28a197;
+      --data-4: #4c2c92;
+      --data-context: #b1b4b6;
+
+      /* Semantic tokens */
+      --positive: #00703c;
+      --positive-container: #e6f2ec;
+      --warning: #c75a0a;
+      --warning-container: #fdf0e6;
+      --error-container: #fbeae7;
+
+      /* Road schematic & French traffic sign tokens */
+      --sign-red: #d4351c;
+      --sign-blue: #1a569e;
+      --sign-white: #ffffff;
+      --sign-ink: #0b0c0c;
+      --road-asphalt: #2b2f33;
+      --road-shoulder: #505a5f;
+      --road-verge: #d7dfd9;
+      --road-median: #6b7278;
+      --sky-clear: #e8f0f7;
+      --sky-rain: #cfd5da;
+      --sky-fog: #e4e4e2;
+      --car-lead: #505a5f;
+      --car-ego: #162e51;
+      --probatoire-bg: #ffffff;
+
+      /* Focus */
+      --focus: #ffdd00;
+      --focus-yellow: #ffdd00;
+      --focus-ring: 3px solid var(--focus-yellow);
+      --focus-bar: inset 0 0 0 2px var(--on-surface);
+      --focus-underline: 0 -2px var(--focus-yellow), 0 4px var(--on-surface);
+
+      /* Fonts */
+      --font-headline: 'Public Sans', sans-serif;
+      --font-body: 'Public Sans', sans-serif;
+      --font-label: 'Public Sans', sans-serif;
+
+      /* Shape */
+      --rounded: 0;
+      --rounded-lg: 0;
+      --rounded-full: 0;
+
+      /* Style effects */
+      --top-index-rule: 6px solid var(--primary);
+      --inset-rule: 5px solid var(--tertiary);
+      --inset-rule-primary: 5px solid var(--primary);
+      --inset-rule-error: 5px solid var(--error);
+      --inset-rule-warning: 5px solid var(--warning);
+      --inset-rule-positive: 5px solid var(--positive);
+      --button-ground: 0 2px 0 #091526;
+      --button-ground-secondary: 0 2px 0 #858686;
+
+      /* Type scale (Focused Tool) */
+      --display-size: clamp(1.75rem, 1.4rem + 1.2vw, 2.35rem);
+      --headline-size: clamp(1.25rem, 1.1rem + 0.5vw, 1.5rem);
+      --subhead-size: clamp(1.0625rem, 1rem + 0.25vw, 1.1875rem);
+      --body-size: clamp(0.9375rem, 0.9rem + 0.15vw, 1rem);
+      --label-size: 0.75rem;
+
+      /* Spacing scale (4pt base) */
+      --space-xs: 0.25rem;
+      --space-sm: 0.5rem;
+      --space-md: 1rem;
+      --space-lg: 1.5rem;
+      --space-xl: 2.5rem;
+      --space-2xl: 4rem;
+      --space-3xl: 6rem;
+
+      /* Motion */
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+      --dur-micro: 120ms;
+      --dur-short: 220ms;
+      --dur-long: 420ms;
+    }
+
+    /* Base reset */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { overflow-x: clip; margin: 0; padding: 0; }
+    header { position: static !important; }
+
+    body {
+      font-family: var(--font-body);
+      font-size: var(--body-size);
+      line-height: 1.5;
+      color: var(--on-surface);
+      background: var(--background);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button, input, select, textarea {
+      font-family: inherit;
+    }
+
+    .page-grid {
+      display: grid;
+      gap: var(--space-xl);
+      padding: var(--space-lg);
+      max-width: 1200px;
+      margin: 0 auto;
+      overflow: hidden;
+    }
+    .page-grid * { min-width: 0; }
+
+    /* Focus treatment (Handbook) */
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    [tabindex]:focus-visible {
+      outline: var(--focus-ring);
+      outline-offset: 0;
+      box-shadow: var(--focus-bar);
+    }
+
+    /* Top index header */
+    .index-header {
+      border-top: var(--top-index-rule);
+      border-bottom: 1px solid var(--on-surface);
+      padding: var(--space-sm) 0;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--space-sm);
+      font-family: var(--font-label);
+      font-weight: 700;
+      font-size: var(--label-size);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--on-surface);
+    }
+
+    .index-header-meta {
+      color: var(--on-surface-variant);
+      font-weight: 700;
+    }
+
+    .page-title-block {
+      margin-top: var(--space-md);
+      padding-bottom: var(--space-lg);
+      border-bottom: 1px solid var(--outline-variant);
+    }
+
+    h1 {
+      margin: 0 0 var(--space-sm) 0;
+      font-family: var(--font-headline);
+      font-size: var(--display-size);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.01em;
+      color: var(--on-surface);
+    }
+
+    h2 {
+      margin: 0 0 var(--space-sm) 0;
+      font-family: var(--font-headline);
+      font-size: var(--headline-size);
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.01em;
+      color: var(--on-surface);
+    }
+
+    h3 {
+      margin: 0 0 var(--space-xs) 0;
+      font-family: var(--font-headline);
+      font-size: var(--subhead-size);
+      font-weight: 700;
+      line-height: 1.25;
+      color: var(--on-surface);
+    }
+
+    .lede {
+      margin: 0;
+      max-width: 65ch;
+      color: var(--on-surface-variant);
+      font-size: var(--subhead-size);
+      line-height: 1.45;
+    }
+
+    /* Step badge */
+    .step-heading {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      margin-bottom: var(--space-sm);
+    }
+
+    .step-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      flex-shrink: 0;
+      background: var(--primary);
+      color: var(--on-primary);
+      font-weight: 800;
+      font-size: 0.8125rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .step-title {
+      margin: 0;
+      font-size: var(--subhead-size);
+      font-weight: 800;
+      color: var(--on-surface);
+    }
+
+    .field-hint {
+      margin: 0 0 var(--space-sm) 0;
+      font-size: 0.875rem;
+      color: var(--on-surface-variant);
+    }
+
+    /* Main tool two-column workspace */
+    .workspace-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.45fr);
+      gap: var(--space-xl);
+      align-items: start;
+    }
+
+    .controls-column {
+      display: grid;
+      gap: var(--space-lg);
+    }
+
+    .control-group {
+      padding-bottom: var(--space-md);
+      border-bottom: 1px solid var(--outline-variant);
+    }
+
+    .control-group:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    /* Preset row */
+    .preset-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+      align-items: center;
+    }
+
+    .preset-label {
+      font-size: var(--label-size);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--on-surface-variant);
+      margin-right: var(--space-xs);
+    }
+
+    /* Grounded Handbook buttons */
+    .button {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      font-family: var(--font-label);
+      font-weight: 600;
+      font-size: 0.9375rem;
+      line-height: 1.2;
+      background: var(--primary);
+      color: var(--on-primary);
+      border: 0;
+      border-radius: var(--rounded);
+      padding: 0.625rem 1rem;
+      min-height: 44px;
+      cursor: pointer;
+      box-shadow: var(--button-ground);
+      transition: background-color var(--dur-micro) var(--ease-out), transform var(--dur-micro) var(--ease-out);
+    }
+
+    .button:hover {
+      background: var(--tertiary);
+    }
+
+    .button:active {
+      transform: translateY(2px);
+      box-shadow: none;
+    }
+
+    .button--secondary {
+      background: var(--surface-container-low);
+      color: var(--on-surface);
+      box-shadow: var(--button-ground-secondary);
+      border: 1px solid var(--outline-variant);
+    }
+
+    .button--secondary:hover {
+      background: var(--surface-container);
+    }
+
+    .button--compact {
+      min-height: 36px;
+      padding: 0.375rem 0.75rem;
+      font-size: 0.8125rem;
+    }
+
+    /* Toggle radio-card grid */
+    .option-stack {
+      display: grid;
+      gap: var(--space-sm);
+    }
+
+    .option-row-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--space-sm);
+    }
+
+    .option-row-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: var(--space-sm);
+    }
+
+    .toggle-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      text-align: left;
+      width: 100%;
+      min-height: 48px;
+      padding: var(--space-sm) var(--space-md);
+      background: var(--background);
+      color: var(--on-surface);
+      border: 2px solid var(--outline);
+      border-radius: var(--rounded);
+      cursor: pointer;
+      transition: background-color var(--dur-micro) var(--ease-out), box-shadow var(--dur-micro) var(--ease-out);
+    }
+
+    .toggle-btn:hover {
+      background: var(--surface-container-low);
+    }
+
+    .toggle-btn[aria-pressed="true"] {
+      background: var(--on-surface);
+      color: var(--background);
+      box-shadow: inset 5px 0 0 var(--tertiary);
+    }
+
+    .toggle-btn-main {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      gap: var(--space-sm);
+      font-weight: 700;
+      font-size: 0.9375rem;
+      line-height: 1.25;
+    }
+
+    .toggle-btn-sub {
+      margin-top: 2px;
+      font-size: 0.8125rem;
+      color: var(--on-surface-variant);
+      line-height: 1.3;
+    }
+
+    .toggle-btn[aria-pressed="true"] .toggle-btn-sub {
+      color: var(--surface-container);
+    }
+
+    .toggle-badge {
+      font-size: var(--label-size);
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      padding: 2px 6px;
+      background: var(--surface-container-low);
+      color: var(--on-surface);
+      border: 1px solid var(--outline-variant);
+      flex-shrink: 0;
+    }
+
+    .toggle-btn[aria-pressed="true"] .toggle-badge {
+      background: var(--primary);
+      color: var(--on-primary);
+      border-color: var(--primary);
+    }
+
+    /* Conditional sub-options (e.g. Zone 30 / Zone de rencontre or 90 km/h overtaking section) */
+    .sub-panel {
+      margin-top: var(--space-sm);
+      padding: var(--space-sm) var(--space-md);
+      background: var(--surface-container-low);
+      border-left: var(--inset-rule);
+    }
+
+    .sub-panel-label {
+      display: block;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      margin-bottom: var(--space-xs);
+      color: var(--on-surface);
+    }
+
+    .sub-toggle-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-xs);
+    }
+
+    .mini-toggle {
+      min-height: 44px;
+      padding: 0.375rem 0.625rem;
+      background: var(--background);
+      color: var(--on-surface);
+      border: 2px solid var(--outline);
+      font-size: 0.8125rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .mini-toggle[aria-pressed="true"] {
+      background: var(--primary);
+      color: var(--on-primary);
+      border-color: var(--primary);
+    }
+
+    /* Speed override slider & numeric sync */
+    .speed-control-card {
+      padding: var(--space-md);
+      background: var(--surface-container-low);
+      border-left: var(--inset-rule-primary);
+    }
+
+    .speed-control-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: end;
+      gap: var(--space-md);
+    }
+
+    .slider-wrap {
+      flex: 1 1 180px;
+    }
+
+    .input-label {
+      display: block;
+      font-weight: 700;
+      font-size: 0.875rem;
+      margin-bottom: var(--space-xs);
+      color: var(--on-surface);
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 36px;
+      accent-color: var(--primary);
+      cursor: pointer;
+      margin: 0;
+    }
+
+    .number-input-wrap {
+      width: 110px;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      min-height: 44px;
+      padding: var(--space-xs) var(--space-sm);
+      border: 2px solid var(--outline);
+      border-radius: var(--rounded);
+      background: var(--background);
+      color: var(--on-surface);
+      font-size: 1rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Results / Output Column */
+    .results-column {
+      display: grid;
+      gap: var(--space-lg);
+    }
+
+    .verdict-panel {
+      border-left: var(--inset-rule);
+      background: var(--surface-container-low);
+      padding: var(--space-lg);
+    }
+
+    .verdict-panel.is-capped {
+      border-left: var(--inset-rule-error);
+    }
+
+    .verdict-top {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: var(--space-md);
+      padding-bottom: var(--space-md);
+      border-bottom: 1px solid var(--outline-variant);
+    }
+
+    .verdict-speed-group {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+    }
+
+    .speed-sign-wrap {
+      flex-shrink: 0;
+      width: 84px;
+      height: 84px;
+    }
+
+    .verdict-kicker {
+      font-size: var(--label-size);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--on-surface-variant);
+      margin-bottom: 2px;
+    }
+
+    .verdict-figure {
+      font-size: clamp(2.25rem, 1.8rem + 1.8vw, 3.25rem);
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+      color: var(--on-surface);
+    }
+
+    .verdict-unit {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--on-surface-variant);
+      margin-left: 4px;
+    }
+
+    .status-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-xs);
+      margin-top: var(--space-xs);
+    }
+
+    .status-tag {
+      display: inline-block;
+      padding: 3px 8px;
+      font-size: var(--label-size);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      background: var(--primary-container);
+      color: var(--on-primary-container);
+    }
+
+    .status-tag--alert {
+      background: var(--background);
+      color: var(--error);
+      border: 1px solid var(--error);
+    }
+
+    .status-tag--warn {
+      background: var(--warning-container);
+      color: var(--on-surface);
+      border-left: 3px solid var(--warning);
+    }
+
+    .verdict-rationale {
+      margin: var(--space-md) 0;
+      font-size: 0.9375rem;
+      color: var(--on-surface);
+      max-width: 65ch;
+    }
+
+    /* Key figures row inside verdict */
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: var(--space-md);
+      padding-top: var(--space-sm);
+    }
+
+    .kpi-tile {
+      background: var(--background);
+      border-left: 4px solid var(--primary);
+      padding: var(--space-sm) var(--space-md);
+    }
+
+    .kpi-tile--turquoise {
+      border-left-color: var(--data-3);
+    }
+
+    .kpi-tile--orange {
+      border-left-color: var(--data-2);
+    }
+
+    .kpi-label {
+      font-size: var(--label-size);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--on-surface-variant);
+    }
+
+    .kpi-value {
+      font-size: 1.5rem;
+      font-weight: 800;
+      line-height: 1.2;
+      font-variant-numeric: tabular-nums;
+      color: var(--on-surface);
+      margin: 2px 0;
+    }
+
+    .kpi-sub {
+      font-size: 0.8125rem;
+      color: var(--on-surface-variant);
+      line-height: 1.3;
+    }
+
+    /* Live Road Scene SVG container */
+    .scene-panel {
+      border: 2px solid var(--outline);
+      background: var(--background);
+    }
+
+    .scene-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: var(--space-sm) var(--space-md);
+      border-bottom: 1px solid var(--outline-variant);
+      background: var(--surface-container-low);
+    }
+
+    .scene-title {
+      font-size: var(--label-size);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--on-surface);
+    }
+
+    .scene-meta {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--on-surface-variant);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .scene-canvas-wrap {
+      width: 100%;
+      min-height: 230px;
+      display: block;
+    }
+
+    .scene-canvas-wrap svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .scene-caption {
+      padding: var(--space-sm) var(--space-md);
+      border-top: 1px solid var(--outline-variant);
+      font-size: 0.875rem;
+      color: var(--on-surface-variant);
+    }
+
+    /* Visual Road Map Section */
+    .section-block {
+      padding-top: var(--space-lg);
+      border-top: 2px solid var(--on-surface);
+    }
+
+    .section-header-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: var(--space-md);
+      margin-bottom: var(--space-md);
+    }
+
+    .roadmap-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: var(--space-sm);
+    }
+
+    .roadmap-node {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      text-align: left;
+      padding: var(--space-md);
+      background: var(--background);
+      border: 2px solid var(--outline-variant);
+      border-top: 5px solid var(--outline-variant);
+      cursor: pointer;
+      min-height: 220px;
+      transition: background-color var(--dur-micro) var(--ease-out), border-color var(--dur-micro) var(--ease-out);
+    }
+
+    .roadmap-node:hover {
+      background: var(--surface-container-low);
+      border-color: var(--outline);
+    }
+
+    .roadmap-node[aria-current="true"] {
+      background: var(--surface-container-low);
+      border-color: var(--on-surface);
+      border-top: 6px solid var(--primary);
+    }
+
+    .roadmap-speed {
+      font-size: 1.75rem;
+      font-weight: 800;
+      line-height: 1.1;
+      font-variant-numeric: tabular-nums;
+      color: var(--on-surface);
+    }
+
+    .roadmap-speed small {
+      font-size: 0.8125rem;
+      font-weight: 700;
+      color: var(--on-surface-variant);
+    }
+
+    .roadmap-name {
+      font-weight: 800;
+      font-size: 0.9375rem;
+      line-height: 1.25;
+      color: var(--on-surface);
+      margin: var(--space-xs) 0;
+    }
+
+    .roadmap-fr {
+      font-size: 0.8125rem;
+      color: var(--on-surface-variant);
+      margin-bottom: var(--space-sm);
+    }
+
+    .roadmap-rules-mini {
+      border-top: 1px solid var(--outline-variant);
+      padding-top: var(--space-xs);
+      font-size: 0.75rem;
+      color: var(--on-surface);
+      display: grid;
+      gap: 2px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .roadmap-mini-svg {
+      width: 100%;
+      height: 44px;
+      margin: var(--space-xs) 0;
+      display: block;
+    }
+
+    /* Distance & Braking Comparison Table / Chart */
+    .analytics-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+      gap: var(--space-xl);
+      align-items: start;
+    }
+
+    .handbook-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .handbook-table th {
+      text-align: left;
+      font-weight: 700;
+      font-size: 0.875rem;
+      padding: var(--space-sm) var(--space-sm) var(--space-sm) 0;
+      border-bottom: 2px solid var(--on-surface);
+      color: var(--on-surface);
+    }
+
+    .handbook-table th.num,
+    .handbook-table td.num {
+      text-align: right;
+      padding-right: 0;
+      padding-left: var(--space-sm);
+    }
+
+    .handbook-table td {
+      padding: var(--space-sm) var(--space-sm) var(--space-sm) 0;
+      border-bottom: 1px solid var(--outline-variant);
+      font-size: 0.9375rem;
+      vertical-align: middle;
+    }
+
+    .handbook-table tr.is-active-row {
+      background: var(--primary-container);
+      font-weight: 700;
+    }
+
+    .bar-track {
+      width: 100%;
+      height: 14px;
+      background: var(--surface-container-low);
+      position: relative;
+      display: flex;
+    }
+
+    .bar-react {
+      height: 100%;
+      background: var(--data-1);
+    }
+
+    .bar-gap {
+      height: 100%;
+      background: var(--data-3);
+    }
+
+    .legend-inline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-md);
+      margin-bottom: var(--space-sm);
+      font-size: 0.8125rem;
+      font-weight: 700;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-swatch {
+      width: 14px;
+      height: 14px;
+      display: inline-block;
+    }
+
+    /* Regulations & ETG Trap Grid */
+    .reg-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--space-lg);
+    }
+
+    .inset-box {
+      border-left: var(--inset-rule);
+      background: var(--surface-container-low);
+      padding: var(--space-md) var(--space-lg);
+    }
+
+    .inset-box--error {
+      border-left: var(--inset-rule-error);
+    }
+
+    .inset-box--warning {
+      border-left: var(--inset-rule-warning);
+    }
+
+    .inset-box--positive {
+      border-left: var(--inset-rule-positive);
+    }
+
+    .summary-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .summary-list li {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: var(--space-md);
+      padding: var(--space-sm) 0;
+      border-bottom: 1px solid var(--outline-variant);
+      font-size: 0.9375rem;
+    }
+
+    .summary-list li:last-child {
+      border-bottom: 0;
+    }
+
+    .summary-key {
+      font-weight: 700;
+      color: var(--on-surface);
+      flex-shrink: 0;
+    }
+
+    .summary-val {
+      text-align: right;
+      color: var(--on-surface);
+    }
+
+    .rule-list {
+      margin: var(--space-sm) 0 0 0;
+      padding-left: 1.25rem;
+      display: grid;
+      gap: var(--space-xs);
+    }
+
+    .rule-list li {
+      max-width: 65ch;
+    }
+
+    /* Sign shape reference strip */
+    .sign-ref-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: var(--space-md);
+    }
+
+    .sign-ref-card {
+      padding: var(--space-md);
+      border-top: 3px solid var(--on-surface);
+      background: var(--surface-container-low);
+      display: grid;
+      gap: var(--space-xs);
+      align-content: start;
+    }
+
+    .sign-ref-svg {
+      width: 52px;
+      height: 52px;
+      display: block;
+      margin-bottom: var(--space-xs);
+    }
+
+    /* Inline status message & actions footer */
+    .toolbar-footer {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-md);
+      padding: var(--space-md) 0;
+      border-top: 1px solid var(--outline-variant);
+    }
+
+    .action-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+      align-items: center;
+    }
+
+    .inline-feedback {
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: var(--tertiary);
+      min-height: 1.25em;
+    }
+
+    .source-footer {
+      border-top: 1px solid var(--outline-variant);
+      padding-top: var(--space-md);
+      font-size: 0.8125rem;
+      color: var(--on-surface-variant);
+      max-width: 75ch;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 1024px) {
+      .workspace-grid {
+        grid-template-columns: 1fr;
+      }
+      .roadmap-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .analytics-grid {
+        grid-template-columns: 1fr;
+      }
+      .sign-ref-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .page-grid {
+        padding: var(--space-md);
+        gap: var(--space-lg);
+      }
+      .option-row-2,
+      .option-row-3,
+      .kpi-strip,
+      .reg-grid,
+      .roadmap-grid,
+      .sign-ref-grid {
+        grid-template-columns: 1fr;
+      }
+      .roadmap-node {
+        min-height: auto;
+      }
+      .verdict-speed-group {
+        flex-direction: row;
+        align-items: center;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page-grid">
+    <!-- Top Index Header -->
+    <header class="index-header" aria-label="Document index">
+      <span>Code de la Route (ETG) &middot; Speed &amp; Distance Guide</span>
+      <span class="index-header-meta">Art. R413-2 to R413-5 &middot; R412-12 &middot; R416-7</span>
+    </header>
+
+    <div class="page-title-block">
+      <h1>French Speed Limit &amp; Safe Following Calculator</h1>
+      <p class="lede">
+        Select your road network, weather visibility, and licence status to compute the exact legal speed ceiling,
+        the 2-second safe following gap, highway chevron spacing, and active lighting or priority rules.
+      </p>
+    </div>
+
+    <!-- Preset Strip -->
+    <section aria-label="Quick exam scenarios">
+      <div class="preset-strip">
+        <span class="preset-label">Quick scenarios:</span>
+        <button type="button" class="button button--secondary button--compact" onclick="applyPreset('autoroute_rain')">Autoroute in rain</button>
+        <button type="button" class="button button--secondary button--compact" onclick="applyPreset('dense_fog')">Dense fog (&lt; 50 m)</button>
+        <button type="button" class="button button--secondary button--compact" onclick="applyPreset('probatoire_rural')">Probatoire on 2-way road</button>
+        <button type="button" class="button button--secondary button--compact" onclick="applyPreset('city_default')">City / Agglomération</button>
+      </div>
+    </section>
+
+    <!-- Primary Calculator Workspace -->
+    <section class="workspace-grid" aria-label="Speed limit calculator and visual preview">
+      <!-- Left: Inputs -->
+      <div class="controls-column">
+        <!-- Step 1: Road Type -->
+        <div class="control-group">
+          <div class="step-heading">
+            <span class="step-badge">1</span>
+            <h2 class="step-title">Road type (<em>Type de voie</em>)</h2>
+          </div>
+          <p class="field-hint">Choose the road classification you are driving on.</p>
+          <div class="option-stack" role="group" aria-label="Road type">
+            <button type="button" class="toggle-btn" id="road-urban" aria-pressed="false" onclick="setRoadType('urban')">
+              <span class="toggle-btn-main">
+                <span>Ville / Agglomération</span>
+                <span class="toggle-badge">50 km/h</span>
+              </span>
+              <span class="toggle-btn-sub">Built-up area default (includes Zone 30 &amp; Zone de rencontre)</span>
+            </button>
+
+            <button type="button" class="toggle-btn" id="road-twoway" aria-pressed="false" onclick="setRoadType('twoway')">
+              <span class="toggle-btn-main">
+                <span>Route à double sens sans séparateur</span>
+                <span class="toggle-badge">80 km/h</span>
+              </span>
+              <span class="toggle-btn-sub">Two-way rural road without central barrier (90 km/h signed sections)</span>
+            </button>
+
+            <button type="button" class="toggle-btn" id="road-divided" aria-pressed="false" onclick="setRoadType('divided')">
+              <span class="toggle-btn-main">
+                <span>Chaussées séparées</span>
+                <span class="toggle-badge">110 km/h</span>
+              </span>
+              <span class="toggle-btn-sub">Divided expressway with central reservation (<em>terre-plein central</em>)</span>
+            </button>
+
+            <button type="button" class="toggle-btn" id="road-autoroute" aria-pressed="true" onclick="setRoadType('autoroute')">
+              <span class="toggle-btn-main">
+                <span>Autoroute</span>
+                <span class="toggle-badge">130 km/h</span>
+              </span>
+              <span class="toggle-btn-sub">Motorway with controlled access &amp; emergency shoulder (BAU)</span>
+            </button>
+          </div>
+
+          <!-- Conditional Sub-Option: Urban Zone -->
+          <div class="sub-panel" id="urban-subpanel" hidden>
+            <span class="sub-panel-label">Urban sub-zone (<em>Agglomération</em>):</span>
+            <div class="sub-toggle-row" role="group" aria-label="Urban sub-zone">
+              <button type="button" class="mini-toggle" id="zone-standard" aria-pressed="true" onclick="setUrbanZone('standard')">Standard (50 km/h)</button>
+              <button type="button" class="mini-toggle" id="zone-30" aria-pressed="false" onclick="setUrbanZone('zone30')">Zone 30 (30 km/h)</button>
+              <button type="button" class="mini-toggle" id="zone-rencontre" aria-pressed="false" onclick="setUrbanZone('rencontre')">Zone de rencontre (20 km/h)</button>
+            </div>
+          </div>
+
+          <!-- Conditional Sub-Option: Overtaking section 90 km/h -->
+          <div class="sub-panel" id="twoway-subpanel" hidden>
+            <span class="sub-panel-label">Roadway configuration:</span>
+            <div class="sub-toggle-row" role="group" aria-label="Two-way configuration">
+              <button type="button" class="mini-toggle" id="twoway-80" aria-pressed="true" onclick="setTwowaySigned90(false)">Standard 2-way (80 km/h)</button>
+              <button type="button" class="mini-toggle" id="twoway-90" aria-pressed="false" onclick="setTwowaySigned90(true)">Signed overtaking section (90 km/h)</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Weather Conditions -->
+        <div class="control-group">
+          <div class="step-heading">
+            <span class="step-badge">2</span>
+            <h2 class="step-title">Weather &amp; visibility (<em>Météo</em>)</h2>
+          </div>
+          <p class="field-hint">Precipitation lowers highway caps; visibility under 50 m caps all roads at 50 km/h.</p>
+          <div class="option-stack" role="group" aria-label="Weather conditions">
+            <button type="button" class="toggle-btn" id="weather-dry" aria-pressed="true" onclick="setWeather('dry')">
+              <span class="toggle-btn-main">
+                <span>Dry / Temps clair</span>
+                <i data-lucide="sun" aria-hidden="true" width="18" height="18"></i>
+              </span>
+              <span class="toggle-btn-sub">Clear visibility, dry road surface</span>
+            </button>
+
+            <button type="button" class="toggle-btn" id="weather-rain" aria-pressed="false" onclick="setWeather('rain')">
+              <span class="toggle-btn-main">
+                <span>Rain / Précipitations</span>
+                <i data-lucide="cloud-rain" aria-hidden="true" width="18" height="18"></i>
+              </span>
+              <span class="toggle-btn-sub">Rain or snowfall; lowers 130 &rarr; 110, 110 &rarr; 100, 90 &rarr; 80</span>
+            </button>
+
+            <button type="button" class="toggle-btn" id="weather-fog" aria-pressed="false" onclick="setWeather('fog')">
+              <span class="toggle-btn-main">
+                <span>Visibility &lt; 50 m / Brouillard intense</span>
+                <i data-lucide="cloud-fog" aria-hidden="true" width="18" height="18"></i>
+              </span>
+              <span class="toggle-btn-sub">Art. R413-4: 50 km/h ceiling across all roads &amp; motorways</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 3: Driver Status -->
+        <div class="control-group">
+          <div class="step-heading">
+            <span class="step-badge">3</span>
+            <h2 class="step-title">Driver status (<em>Statut du conducteur</em>)</h2>
+          </div>
+          <p class="field-hint">Probationary drivers carry an <em>A</em> disc and stricter speed ceilings (Art. R413-5).</p>
+          <div class="option-row-2" role="group" aria-label="Driver status">
+            <button type="button" class="toggle-btn" id="driver-standard" aria-pressed="true" onclick="setDriverStatus('standard')">
+              <span class="toggle-btn-main">Standard driver</span>
+              <span class="toggle-btn-sub">Non-probationary (12 pts)</span>
+            </button>
+
+            <button type="button" class="toggle-btn" id="driver-probatoire" aria-pressed="false" onclick="setDriverStatus('probatoire')">
+              <span class="toggle-btn-main">Permis probatoire</span>
+              <span class="toggle-btn-sub"><em>A</em> sticker (3 yrs / 2 yrs AAC)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 4: Test actual travel speed for distance math -->
+        <div class="control-group">
+          <div class="step-heading">
+            <span class="step-badge">4</span>
+            <h2 class="step-title">Test speed for gap calculation</h2>
+          </div>
+          <div class="speed-control-card">
+            <div class="speed-control-row">
+              <div class="slider-wrap">
+                <label class="input-label" for="slider-speed">Driving speed (km/h)</label>
+                <input type="range" id="slider-speed" min="10" max="130" step="5" value="130" oninput="syncFromSlider(this.value)">
+              </div>
+              <div class="number-input-wrap">
+                <label class="input-label" for="input-speed">Exact km/h</label>
+                <input type="number" id="input-speed" min="10" max="130" step="1" value="130" oninput="syncFromNumber(this.value)">
+              </div>
+              <button type="button" class="button button--secondary button--compact" id="btn-match-max" onclick="matchLegalMax()">Match legal max</button>
+            </div>
+            <p class="field-hint" id="speed-override-note" style="margin-top: var(--space-xs); margin-bottom: 0;">
+              Synced to current legal limit (130 km/h). Drag to test lower speeds in heavy traffic or bad weather.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Immediate Verdict & Visual Road Scene -->
+      <div class="results-column">
+        <div class="verdict-panel" id="verdict-panel" aria-live="polite">
+          <div class="verdict-top">
+            <div class="verdict-speed-group">
+              <div class="speed-sign-wrap" id="speed-sign-svg" aria-hidden="true"></div>
+              <div>
+                <div class="verdict-kicker" id="verdict-context-label">Autoroute &middot; Dry &middot; Standard Driver</div>
+                <div class="verdict-figure">
+                  <span id="verdict-speed">130</span><span class="verdict-unit">km/h</span>
+                </div>
+                <div class="status-tags" id="verdict-tags"></div>
+              </div>
+            </div>
+          </div>
+
+          <p class="verdict-rationale" id="verdict-rationale">
+            Standard motorway speed limit under optimal dry conditions (Art. R413-2 I).
+          </p>
+
+          <div class="kpi-strip">
+            <div class="kpi-tile kpi-tile--turquoise">
+              <div class="kpi-label">2-Second Safe Gap</div>
+              <div class="kpi-value" id="kpi-gap-exact">72.2 m</div>
+              <div class="kpi-sub" id="kpi-gap-rule">ETG rule-of-thumb: ~78 m (&ge; half speed)</div>
+            </div>
+
+            <div class="kpi-tile">
+              <div class="kpi-label">Chevron Guideline</div>
+              <div class="kpi-value" id="kpi-chevrons">2 Chevrons</div>
+              <div class="kpi-sub" id="kpi-chevrons-sub">Highway edge markers (~2 sec gap)</div>
+            </div>
+
+            <div class="kpi-tile kpi-tile--orange">
+              <div class="kpi-label">1-Second Reaction</div>
+              <div class="kpi-value" id="kpi-reaction">36.1 m</div>
+              <div class="kpi-sub" id="kpi-braking-mult">Braking scale: 6.8&times; vs. 50 km/h</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live SVG Road Scene -->
+        <div class="scene-panel">
+          <div class="scene-header">
+            <span class="scene-title" id="scene-title">Live Road Cross-Section &amp; Gap Schematic</span>
+            <span class="scene-meta" id="scene-meta">130 km/h = 36.1 m/s &middot; 2 s = 72.2 m</span>
+          </div>
+          <div class="scene-canvas-wrap" id="road-scene-svg"></div>
+          <div class="scene-caption" id="scene-caption">
+            Keep at least 2 highway chevrons (2 seconds) between your front bumper and the vehicle ahead. Increase spacing in rain or dense traffic.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Visual Road Map (Full Spectrum Interactive Selector) -->
+    <section class="section-block" aria-labelledby="roadmap-heading">
+      <div class="section-header-row">
+        <div>
+          <h2 id="roadmap-heading">Visual Road Network Map</h2>
+          <p class="field-hint" style="margin: 0;">Click any French road environment below to inspect its legal limits and load it into the calculator.</p>
+        </div>
+        <span class="status-tag" id="roadmap-active-badge">Active: Autoroute</span>
+      </div>
+
+      <div class="roadmap-grid" id="roadmap-grid" role="group" aria-label="French road hierarchy map">
+        <!-- Populated by JS -->
+      </div>
+    </section>
+
+    <!-- Safe Following, Reaction & Braking Distance Math -->
+    <section class="section-block" aria-labelledby="distances-heading">
+      <h2 id="distances-heading">2-Second Rule, Reaction &amp; Quadratic Braking Math</h2>
+      <p class="field-hint">
+        Reaction distance rises linearly (~1 s for an alert driver). Braking distance grows roughly with the <strong>square of speed</strong>—doubling speed quadruples braking distance—and lengthens sharply on wet or worn surfaces.
+      </p>
+
+      <div class="analytics-grid">
+        <div>
+          <div class="legend-inline">
+            <span class="legend-item"><span class="legend-swatch" style="background: var(--data-1);"></span> 1s Reaction Distance (v &divide; 3.6)</span>
+            <span class="legend-item"><span class="legend-swatch" style="background: var(--data-3);"></span> Remaining 2s Safe Gap (+1s)</span>
+          </div>
+          <table class="handbook-table" id="distance-table">
+            <thead>
+              <tr>
+                <th>Speed</th>
+                <th>Road Benchmark</th>
+                <th class="num">1s Reaction</th>
+                <th class="num">2s Safe Gap</th>
+                <th class="num">ETG &times;6 Rule</th>
+                <th class="num">Braking vs 50</th>
+                <th style="width: 22%;">2s Gap Scale</th>
+              </tr>
+            </thead>
+            <tbody id="distance-table-body">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="inset-box">
+          <h3>How to measure the 2-second gap on the road</h3>
+          <ul class="rule-list">
+            <li><strong>On motorways &amp; expressways:</strong> Use the white painted edge chevrons. Stay at least <strong>2 chevrons</strong> behind the vehicle ahead (Art. R412-12).</li>
+            <li><strong>On any other road:</strong> Pick a fixed landmark (road sign, lamppost, bridge shadow). When the car ahead passes it, count <em>&ldquo;one, two&rdquo;</em> slowly—you must not reach it before finishing.</li>
+            <li><strong>Quick ETG mental math:</strong> Multiply the tens digit of your speed by <strong>6</strong> (e.g., 130 km/h &rarr; 13 &times; 6 = <strong>78 m</strong>), or keep at least half your speed in meters in dry conditions.</li>
+            <li><strong>Heavy vehicles &amp; tunnels:</strong> Vehicles over 3.5 t or 7 m long must keep at least <strong>50 m</strong> outside built-up areas and in tunnels (Art. R412-12 II, L412-2).</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Applicable Regulations & Exam Trap Alerts -->
+    <section class="section-block" aria-labelledby="regulations-heading">
+      <h2 id="regulations-heading">Active Regulations &amp; ETG Exam Traps</h2>
+      <div class="reg-grid" id="regulations-grid">
+        <!-- Populated dynamically by JS -->
+      </div>
+    </section>
+
+    <!-- Sign Shape Reference & Exam Rules -->
+    <section class="section-block" aria-labelledby="signs-heading">
+      <h2 id="signs-heading">Sign Shape Coding &amp; ETG Exam Mechanics</h2>
+      <p class="field-hint">
+        Code de la Route Error Log reminder: never confuse red-bordered prohibition signs (<em>interdiction</em>) with blue circular mandatory signs (<em>obligation</em>).
+      </p>
+
+      <div class="sign-ref-grid">
+        <div class="sign-ref-card">
+          <svg class="sign-ref-svg" viewBox="0 0 60 60" aria-hidden="true">
+            <circle cx="30" cy="30" r="25" fill="var(--sign-white)" stroke="var(--sign-red)" stroke-width="6"/>
+            <text x="30" y="36" text-anchor="middle" font-family="Public Sans, sans-serif" font-weight="800" font-size="18" fill="var(--sign-ink)">50</text>
+          </svg>
+          <h3>Panneau d&rsquo;interdiction</h3>
+          <p class="field-hint" style="margin: 0;"><strong>Circular, white with red border.</strong> Prohibits an action or sets a maximum speed ceiling.</p>
+        </div>
+
+        <div class="sign-ref-card">
+          <svg class="sign-ref-svg" viewBox="0 0 60 60" aria-hidden="true">
+            <circle cx="30" cy="30" r="25" fill="var(--sign-blue)"/>
+            <path d="M22 38 L22 24 L17 24 L30 13 L43 24 L38 24 L38 38 Z" fill="var(--sign-white)"/>
+          </svg>
+          <h3>Panneau d&rsquo;obligation</h3>
+          <p class="field-hint" style="margin: 0;"><strong>Circular, solid blue.</strong> Imposes a mandatory direction, lane, minimum speed, or equipment.</p>
+        </div>
+
+        <div class="sign-ref-card">
+          <svg class="sign-ref-svg" viewBox="0 0 60 60" aria-hidden="true">
+            <polygon points="30,6 55,51 5,51" fill="var(--sign-white)" stroke="var(--sign-red)" stroke-width="5" stroke-linejoin="round"/>
+            <rect x="28" y="22" width="4" height="16" fill="var(--sign-ink)"/>
+            <rect x="28" y="41" width="4" height="4" fill="var(--sign-ink)"/>
+          </svg>
+          <h3>Panneau de danger</h3>
+          <p class="field-hint" style="margin: 0;"><strong>Triangular, red border.</strong> Warns of a hazard ahead (~50 m in town, ~150 m outside town).</p>
+        </div>
+
+        <div class="sign-ref-card">
+          <svg class="sign-ref-svg" viewBox="0 0 60 60" aria-hidden="true">
+            <rect x="7" y="7" width="46" height="46" fill="var(--sign-blue)"/>
+            <rect x="13" y="13" width="34" height="34" fill="none" stroke="var(--sign-white)" stroke-width="2"/>
+            <text x="30" y="37" text-anchor="middle" font-family="Public Sans, sans-serif" font-weight="800" font-size="20" fill="var(--sign-white)">P</text>
+          </svg>
+          <h3>Indication &amp; Panonceau</h3>
+          <p class="field-hint" style="margin: 0;"><strong>Square/rectangular blue.</strong> Guidance info. A sub-panel (<em>panonceau</em>) narrows distance, scope, or vehicles.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Actions Toolbar & Sources Footer -->
+    <div class="toolbar-footer">
+      <div class="action-row">
+        <button type="button" class="button" onclick="exportSummary()">
+          <i data-lucide="download" aria-hidden="true" width="16" height="16"></i>
+          <span>Export current rule sheet (.txt)</span>
+        </button>
+        <button type="button" class="button button--secondary" onclick="resetDefaults(this)">
+          <i data-lucide="rotate-ccw" aria-hidden="true" width="16" height="16"></i>
+          <span>Reset to defaults</span>
+        </button>
+      </div>
+      <span class="inline-feedback" id="action-feedback" role="status" aria-live="polite"></span>
+    </div>
+
+    <footer class="source-footer">
+      <strong>Sources:</strong> Compiled from user Code de la Route (ETG) study notes, Traffic Glossary, Error Log (#001–#002), and French <em>Code de la route</em> legislative &amp; regulatory articles (L110-2, L223-1, L412-2, R110-2, R412-8, R412-11, R412-11-1, R412-12, R412-28-1, R413-2 to R413-5, R413-17, R414-4, R416-6, R416-7, R421-2, R421-5).
+    </footer>
+  </main>
+
+  <api-shim></api-shim>
+  <script>
+    const DEFAULT_STATE = {
+      roadType: `autoroute`,
+      urbanZone: `standard`,
+      twowaySigned90: false,
+      weather: `dry`,
+      driverStatus: `standard`,
+      customSpeed: null
+    };
+
+    let appState = Object.assign({}, DEFAULT_STATE);
+
+    const ROAD_CONFIG = {
+      urban: {
+        name: `Ville / Agglomération`,
+        shortName: `City / Urban`,
+        baseDry: 50,
+        baseRain: 50,
+        probatoireDry: 50,
+        probatoireRain: 50,
+        clearance: `1.0 m lateral clearance when overtaking cyclists, pedestrians, or animals (Art. R414-4).`,
+        specificRules: [
+          `Default urban ceiling is 50 km/h (up to 70 km/h only where signed, e.g., Paris boulevard périphérique).`,
+          `In Zone 30 (30 km/h) and Zone de rencontre (20 km/h), streets are two-way for cyclists &amp; EDPMs by default (Art. R412-28-1).`,
+          `Slow down and stop if needed to let public buses pull out from marked stops (Art. R412-11).`,
+          `Verify intersection signage: priorité à droite applies unless overridden by a Stop, Cédez le passage, or priority marking.`
+        ]
+      },
+      twoway: {
+        name: `Route à double sens sans séparateur`,
+        shortName: `Two-way Rural`,
+        baseDry: 80,
+        baseRain: 80,
+        probatoireDry: 80,
+        probatoireRain: 80,
+        clearance: `1.5 m minimum lateral clearance when overtaking cyclists, pedestrians, or animals outside built-up areas (Art. R414-4).`,
+        specificRules: [
+          `Standard ceiling is 80 km/h outside built-up areas (Art. R413-2 I 3&deg;).`,
+          `On designated overtaking sections (créneaux de dépassement with &ge; 2 lanes in your direction, signed 90), standard drivers may reach 90 km/h in dry weather—but drop back to 80 km/h in rain and at all times under permis probatoire.`,
+          `Never cross or straddle a solid centerline (ligne continue); dashed lines permit overtaking only with clear forward visibility.`,
+          `No overtaking before hill crests, blind bends, or pedestrian crossings.`
+        ]
+      },
+      divided: {
+        name: `Chaussées séparées`,
+        shortName: `Divided Expressway`,
+        baseDry: 110,
+        baseRain: 100,
+        probatoireDry: 100,
+        probatoireRain: 100,
+        clearance: `1.5 m clearance for vulnerable users where permitted; expressways may ban slow/non-motorized traffic (Art. L151-1).`,
+        specificRules: [
+          `Divided roads with a central reservation (terre-plein central) are capped at 110 km/h dry and 100 km/h in precipitation (Art. R413-2).`,
+          `Probationary drivers are limited to 100 km/h even in clear, dry weather (Art. R413-5 I 2&deg;).`,
+          `Emergency shoulder (BAU) is strictly for breakdowns/emergencies—never for driving, resting, or phone calls (Art. R412-8).`,
+          `Corridor de sécurité (Art. R412-11-1): slow down and change lanes (or move as far away as possible) when passing a stationary vehicle with warning or hazard lights.`
+        ]
+      },
+      autoroute: {
+        name: `Autoroute`,
+        shortName: `Autoroute`,
+        baseDry: 130,
+        baseRain: 110,
+        probatoireDry: 110,
+        probatoireRain: 110,
+        clearance: `Pedestrians, bicycles, mopeds, tractors, and light quadricycles are strictly banned from autoroutes (Art. R421-2).`,
+        specificRules: [
+          `Standard ceiling is 130 km/h dry and 110 km/h in rain/precipitation (Art. R413-2).`,
+          `Permis probatoire is capped at 110 km/h on 130 km/h autoroutes (100 km/h on 110 km/h sections, Art. R413-5).`,
+          `Keep at least 80 km/h in the leftmost lane when traffic is smooth and visibility/grip are good.`,
+          `Never drive, stop, or walk on the Bande d'Arrêt d'Urgence (BAU) except in breakdown/emergency; never cross the central median (Art. R421-5).`,
+          `Aire de repos = parking, picnic, restrooms (no fuel guaranteed); Aire de service = fuel, food, and service facilities.`
+        ]
+      }
+    };
+
+    const ROADMAP_NODES = [
+      {
+        id: `rencontre`,
+        roadType: `urban`,
+        urbanZone: `rencontre`,
+        twowaySigned90: false,
+        speed: 20,
+        title: `Zone de rencontre`,
+        fr: `Shared pedestrian-priority street`,
+        rain: 20,
+        prob: 20,
+        fog: 20,
+        kind: `rencontre`
+      },
+      {
+        id: `zone30`,
+        roadType: `urban`,
+        urbanZone: `zone30`,
+        twowaySigned90: false,
+        speed: 30,
+        title: `Zone 30`,
+        fr: `Traffic-calmed urban zone`,
+        rain: 30,
+        prob: 30,
+        fog: 30,
+        kind: `zone30`
+      },
+      {
+        id: `urban`,
+        roadType: `urban`,
+        urbanZone: `standard`,
+        twowaySigned90: false,
+        speed: 50,
+        title: `Agglomération`,
+        fr: `Built-up area default`,
+        rain: 50,
+        prob: 50,
+        fog: 50,
+        kind: `urban`
+      },
+      {
+        id: `twoway`,
+        roadType: `twoway`,
+        urbanZone: `standard`,
+        twowaySigned90: false,
+        speed: 80,
+        title: `Route à double sens`,
+        fr: `No central barrier (90 signed)`,
+        rain: 80,
+        prob: 80,
+        fog: 50,
+        kind: `twoway`
+      },
+      {
+        id: `divided`,
+        roadType: `divided`,
+        urbanZone: `standard`,
+        twowaySigned90: false,
+        speed: 110,
+        title: `Chaussées séparées`,
+        fr: `Divided expressway`,
+        rain: 100,
+        prob: 100,
+        fog: 50,
+        kind: `divided`
+      },
+      {
+        id: `autoroute`,
+        roadType: `autoroute`,
+        urbanZone: `standard`,
+        twowaySigned90: false,
+        speed: 130,
+        title: `Autoroute`,
+        fr: `Motorway`,
+        rain: 110,
+        prob: 110,
+        fog: 50,
+        kind: `autoroute`
+      }
+    ];
+
+    function computeLegalSpeed(state) {
+      let dryLimit = 130;
+      let rainLimit = 110;
+      let probLimit = 110;
+      let label = ``;
+
+      if (state.roadType === `urban`) {
+        if (state.urbanZone === `rencontre`) {
+          dryLimit = 20; rainLimit = 20; probLimit = 20;
+          label = `Zone de rencontre (Agglomération)`;
+        } else if (state.urbanZone === `zone30`) {
+          dryLimit = 30; rainLimit = 30; probLimit = 30;
+          label = `Zone 30 (Agglomération)`;
+        } else {
+          dryLimit = 50; rainLimit = 50; probLimit = 50;
+          label = `Ville / Agglomération`;
+        }
+      } else if (state.roadType === `twoway`) {
+        dryLimit = state.twowaySigned90 ? 90 : 80;
+        rainLimit = 80;
+        probLimit = 80;
+        label = state.twowaySigned90
+          ? `Route à double sens (90 km/h overtaking section)`
+          : `Route à double sens sans séparateur`;
+      } else if (state.roadType === `divided`) {
+        dryLimit = 110;
+        rainLimit = 100;
+        probLimit = 100;
+        label = `Chaussées séparées`;
+      } else {
+        dryLimit = 130;
+        rainLimit = 110;
+        probLimit = 110;
+        label = `Autoroute`;
+      }
+
+      let limit = dryLimit;
+      const tags = [];
+      let rationale = ``;
+      let isCapped = false;
+
+      if (state.weather === `fog`) {
+        limit = Math.min(limit, 50);
+        isCapped = limit < dryLimit || state.roadType !== `urban` || state.urbanZone === `standard`;
+        tags.push({ text: `VISIBILITY < 50M CAP`, kind: `alert` });
+        tags.push({ text: `ART. R413-4`, kind: `info` });
+        if (state.driverStatus === `probatoire`) {
+          tags.push({ text: `PROBATOIRE (A)`, kind: `warn` });
+        }
+        rationale = `Visibility under 50 meters lowers the legal maximum to 50 km/h across every road and motorway network (Art. R413-4). In Zone 30 or Zone de rencontre, the lower local limit (30 or 20 km/h) still governs.`;
+      } else {
+        if (state.weather === `rain`) {
+          if (rainLimit < limit) {
+            limit = rainLimit;
+            isCapped = true;
+            tags.push({ text: `REDUCED BY RAIN`, kind: `warn` });
+          } else {
+            tags.push({ text: `RAIN / WET SURFACE`, kind: `warn` });
+          }
+        } else {
+          tags.push({ text: `DRY / CLEAR`, kind: `info` });
+        }
+
+        if (state.driverStatus === `probatoire`) {
+          if (probLimit < limit) {
+            limit = probLimit;
+            isCapped = true;
+            tags.push({ text: `PROBATOIRE CAP (ART. R413-5)`, kind: `alert` });
+          } else {
+            tags.push({ text: `PERMIS PROBATOIRE`, kind: `warn` });
+          }
+        } else {
+          tags.push({ text: `STANDARD LICENCE`, kind: `info` });
+        }
+
+        // Build exact rationale
+        if (state.roadType === `urban`) {
+          if (state.urbanZone === `rencontre`) {
+            rationale = `Zone de rencontre: capped at 20 km/h. Pedestrians are allowed on the carriageway and hold priority over all motor vehicles (Art. R110-2).`;
+          } else if (state.urbanZone === `zone30`) {
+            rationale = `Zone 30: capped at 30 km/h. Cyclists and light mobility riders (EDPM) may travel in both directions unless signed otherwise (Art. R412-28-1).`;
+          } else {
+            rationale = state.weather === `rain`
+              ? `Built-up areas remain capped at 50 km/h in rain, though Art. R413-17 requires slowing further whenever wet pavement or traffic reduces safety.`
+              : `Default built-up area ceiling is 50 km/h (Art. R413-3). Only specific protected sections such as the Paris périphérique are raised to 70 km/h.`;
+          }
+        } else if (state.roadType === `twoway`) {
+          if (state.driverStatus === `probatoire`) {
+            rationale = `Permis probatoire drivers are strictly capped at 80 km/h on two-way non-divided roads (Art. R413-5 I 3°), even on signed 90 km/h overtaking sections.`;
+          } else if (state.weather === `rain`) {
+            rationale = state.twowaySigned90
+              ? `Precipitation lowers signed 90 km/h overtaking sections back to 80 km/h (Art. R413-2 II 3°).`
+              : `Two-way roads without a central barrier remain capped at 80 km/h in rain; adapt speed further to wet grip (Art. R413-17).`;
+          } else {
+            rationale = state.twowaySigned90
+              ? `Signed overtaking section (créneau de dépassement with at least two lanes in your direction): standard drivers may travel up to 90 km/h in dry weather (Art. R413-2 I 3°).`
+              : `Standard ceiling on two-way roads without a central divider is 80 km/h (Art. R413-2 I 3°).`;
+          }
+        } else if (state.roadType === `divided`) {
+          if (state.driverStatus === `probatoire` && state.weather === `dry`) {
+            rationale = `Probationary drivers are capped at 100 km/h on divided expressways (Art. R413-5 I 2°), 10 km/h below the standard 110 km/h limit.`;
+          } else if (state.weather === `rain`) {
+            rationale = `Divided expressways drop from 110 km/h to 100 km/h in precipitation (Art. R413-2 II 2°). Maintain extra following distance on wet surfaces.`;
+          } else {
+            rationale = `Standard limit on roads with two carriageways separated by a central reservation is 110 km/h in dry weather (Art. R413-2 I 2°).`;
+          }
+        } else {
+          if (state.weather === `rain` && state.driverStatus === `probatoire`) {
+            rationale = `Both precipitation (Art. R413-2 II 1°) and probationary rules (Art. R413-5 I 1°) cap 130 km/h autoroutes at 110 km/h. Always slow further if spray or heavy rain impairs control (Art. R413-17).`;
+          } else if (state.weather === `rain`) {
+            rationale = `Precipitation lowers the 130 km/h motorway ceiling to 110 km/h (100 km/h on sections normally signed at 110 km/h, Art. R413-2 II).`;
+          } else if (state.driverStatus === `probatoire`) {
+            rationale = `Permis probatoire drivers are capped at 110 km/h on 130 km/h motorways and must display the rear A disc (Art. R413-5).`;
+          } else {
+            rationale = `Standard motorway limit in clear, dry conditions is 130 km/h (Art. R413-2 I 1°). Keep at least 80 km/h in the leftmost lane when traffic flows freely.`;
+          }
+        }
+      }
+
+      return { limit, dryLimit, rainLimit, probLimit, label, tags, rationale, isCapped };
+    }
+
+    function calculateDistances(speedKmh) {
+      const mps = speedKmh / 3.6;
+      const reaction1s = mps * 1;
+      const safeGap2s = mps * 2;
+      const etgSixRule = (speedKmh / 10) * 6;
+      const halfSpeed = speedKmh / 2;
+      const brakingMultVs50 = Math.pow(speedKmh / 50, 2);
+      return {
+        speedKmh,
+        mps,
+        reaction1s,
+        safeGap2s,
+        etgSixRule,
+        halfSpeed,
+        brakingMultVs50
+      };
+    }
+
+    function renderSpeedSign(speed) {
+      return `
+        <svg viewBox="0 0 100 100" width="84" height="84" aria-hidden="true">
+          <circle cx="50" cy="50" r="44" fill="var(--sign-white)" stroke="var(--sign-red)" stroke-width="10"/>
+          <text x="50" y="61" text-anchor="middle" font-family="Public Sans, sans-serif" font-weight="800" font-size="${speed >= 100 ? 33 : 38}" letter-spacing="-1" fill="var(--sign-ink)">${speed}</text>
+        </svg>
+      `;
+    }
+
+    function renderRoadSceneSVG(state, legalSpeed, calc) {
+      const skyColor = state.weather === `fog`
+        ? `var(--sky-fog)`
+        : state.weather === `rain`
+          ? `var(--sky-rain)`
+          : `var(--sky-clear)`;
+
+      const isHighway = state.roadType === `autoroute` || state.roadType === `divided`;
+      const isProbatoire = state.driverStatus === `probatoire`;
+
+      // Weather overlay marks
+      let weatherOverlay = ``;
+      if (state.weather === `rain`) {
+        let drops = ``;
+        for (let i = 0; i < 24; i++) {
+          const x = 25 + (i * 29) % 660;
+          const y = 14 + ((i * 37) % 70);
+          drops += `<line x1="${x}" y1="${y}" x2="${x - 8}" y2="${y + 18}" stroke="var(--tertiary)" stroke-width="1.5" stroke-opacity="0.55"/>`;
+        }
+        weatherOverlay = drops;
+      } else if (state.weather === `fog`) {
+        weatherOverlay = `
+          <rect x="0" y="0" width="680" height="86" fill="var(--surface-container)" fill-opacity="0.72"/>
+          <rect x="0" y="40" width="680" height="32" fill="var(--background)" fill-opacity="0.52"/>
+          <text x="18" y="30" font-family="Public Sans, sans-serif" font-size="12" font-weight="800" fill="var(--error)">VISIBILITY &lt; 50 M &middot; 50 KM/H MAX (ART. R413-4)</text>
+        `;
+      }
+
+      // Road layout specifics
+      let roadBands = ``;
+      let laneLabels = ``;
+
+      if (state.roadType === `autoroute`) {
+        roadBands = `
+          <!-- Verge -->
+          <rect x="0" y="76" width="680" height="164" fill="var(--road-verge)"/>
+          <!-- Asphalt -->
+          <rect x="0" y="92" width="680" height="128" fill="var(--road-asphalt)"/>
+          <!-- Top median barrier -->
+          <rect x="0" y="88" width="680" height="6" fill="var(--road-median)"/>
+          <!-- Left & middle dashed lanes -->
+          <line x1="0" y1="132" x2="680" y2="132" stroke="var(--sign-white)" stroke-width="2" stroke-dasharray="18 14"/>
+          <!-- Right edge line separating BAU -->
+          <line x1="0" y1="178" x2="680" y2="178" stroke="var(--sign-white)" stroke-width="3" stroke-dasharray="28 10"/>
+          <!-- Highway chevrons along BAU edge (spacing visual) -->
+          <path d="M90 194 L106 186 L90 178" fill="none" stroke="var(--sign-white)" stroke-width="3"/>
+          <path d="M235 194 L251 186 L235 178" fill="none" stroke="var(--sign-white)" stroke-width="3"/>
+          <path d="M380 194 L396 186 L380 178" fill="none" stroke="var(--sign-white)" stroke-width="3"/>
+          <path d="M525 194 L541 186 L525 178" fill="none" stroke="var(--sign-white)" stroke-width="3"/>
+        `;
+        laneLabels = `
+          <text x="16" y="116" font-family="Public Sans, sans-serif" font-size="11" font-weight="700" fill="var(--sign-white)" fill-opacity="0.8">LEFT LANE (&ge; 80 km/h when fluid)</text>
+          <text x="16" y="208" font-family="Public Sans, sans-serif" font-size="11" font-weight="700" fill="var(--sign-white)" fill-opacity="0.9">BAU (Emergency shoulder only) &middot; Chevrons guide 2-second gap</text>
+        `;
+      } else if (state.roadType === `divided`) {
+        roadBands = `
+          <rect x="0" y="76" width="680" height="164" fill="var(--road-verge)"/>
+          <rect x="0" y="92" width="680" height="122" fill="var(--road-asphalt)"/>
+          <rect x="0" y="86" width="680" height="8" fill="var(--road-median)"/>
+          <line x1="0" y1="136" x2="680" y2="136" stroke="var(--sign-white)" stroke-width="2" stroke-dasharray="18 14"/>
+          <line x1="0" y1="184" x2="680" y2="184" stroke="var(--sign-white)" stroke-width="3" stroke-dasharray="24 10"/>
+          <path d="M110 198 L126 190 L110 182" fill="none" stroke="var(--sign-white)" stroke-width="3"/>
+          <path d="M310 198 L326 190 L310 182" fill="none" stroke="var(--sign-white)" stroke-width="3"/>
+          <path d="M510 198 L526 190 L510 182" fill="none" stroke="var(--sign-white)" stroke-width="3"/>
+        `;
+        laneLabels = `
+          <text x="16" y="114" font-family="Public Sans, sans-serif" font-size="11" font-weight="700" fill="var(--sign-white)" fill-opacity="0.85">CENTRAL MEDIAN (Terre-plein central) &middot; 110 dry / 100 rain</text>
+          <text x="16" y="206" font-family="Public Sans, sans-serif" font-size="11" font-weight="700" fill="var(--sign-white)" fill-opacity="0.9">EXPRESSWAY SHOULDER &amp; CHEVRONS</text>
+        `;
+      } else if (state.roadType === `twoway`) {
+        roadBands = `
+          <rect x="0" y="76" width="680" height="164" fill="var(--road-verge)"/>
+          <rect x="0" y="96" width="680" height="114" fill="var(--road-asphalt)"/>
+          <!-- Opposing traffic centerline -->
+          <line x1="0" y1="148" x2="680" y2="148" stroke="var(--sign-white)" stroke-width="3" stroke-dasharray="22 14"/>
+          <!-- Roadside landmark post -->
+          <rect x="520" y="54" width="5" height="42" fill="var(--on-surface)"/>
+          <polygon points="522,42 536,56 508,56" fill="var(--sign-white)" stroke="var(--sign-red)" stroke-width="2"/>
+        `;
+        laneLabels = `
+          <text x="16" y="124" font-family="Public Sans, sans-serif" font-size="11" font-weight="700" fill="var(--sign-white)" fill-opacity="0.85">OPPOSING LANE (No central barrier) &middot; 1.5 m clearance for cyclists</text>
+          <text x="16" y="200" font-family="Public Sans, sans-serif" font-size="11" font-weight="700" fill="var(--sign-white)" fill-opacity="0.9">Count &ldquo;one, two&rdquo; past fixed roadside landmark (${calc.safeGap2s.toFixed(1)} m)</text>
+        `;
+      } else {
+        roadBands = `
+          <rect x="0" y="76" width="680" height="164" fill="var(--surface-container)"/>
+          <rect x="0" y="96" width="680" height="114" fill="var(--road-asphalt)"/>
+          <!-- Sidewalks -->
+          <rect x="0" y="84" width="680" height="14" fill="var(--outline-variant)"/>
+          <rect x="0" y="206" width="680" height="14" fill="var(--outline-variant)"/>
+          <!-- Pedestrian crossing -->
+          <rect x="540" y="104" width="26" height="12" fill="var(--sign-white)" fill-opacity="0.85"/>
+          <rect x="540" y="124" width="26" height="12" fill="var(--sign-white)" fill-opacity="0.85"/>
+          <rect x="540" y="144" width="26" height="12" fill="var(--sign-white)" fill-opacity="0.85"/>
+          <rect x="540" y="164" width="26" height="12" fill="var(--sign-white)" fill-opacity="0.85"/>
+          <rect x="540" y="184" width="26" height="12" fill="var(--sign-white)" fill-opacity="0.85"/>
+        `;
+        laneLabels = `
+          <text x="16" y="118" font-family="Public Sans, sans-serif" font-size="11" font-weight="700" fill="var(--sign-white)" fill-opacity="0.85">URBAN STREET &middot; 1.0 m clearance for cyclists &amp; pedestrians</text>
+          <text x="16" y="200" font-family="Public Sans, sans-serif" font-size="11" font-weight="700" fill="var(--sign-white)" fill-opacity="0.9">${state.urbanZone === `rencontre` ? `PEDESTRIANS HAVE PRIORITY ON ROADWAY (20 km/h)` : state.urbanZone === `zone30` ? `ZONE 30 (30 km/h) &middot; TWO-WAY CYCLING` : `AGGLOMÉRATION (50 km/h) &middot; YIELD TO BUSES`}</text>
+        `;
+      }
+
+      // Dynamic spacing calculation for car positions
+      // Map safeGap2s (approx 11 m to 75 m) proportionally inside scene
+      const gapPx = Math.max(90, Math.min(285, Math.round(70 + calc.safeGap2s * 2.9)));
+      const egoX = 72;
+      const egoWidth = 82;
+      const leadX = egoX + egoWidth + gapPx;
+      const carY = state.roadType === `twoway` || state.roadType === `urban` ? 156 : 142;
+
+      // Reaction vs remaining gap segments
+      const reactionFrac = 0.5;
+      const reactPx = Math.round(gapPx * reactionFrac);
+
+      const probBadge = isProbatoire
+        ? `<rect x="${egoX + 4}" y="${carY + 5}" width="18" height="18" fill="var(--probatoire-bg)" stroke="var(--sign-red)" stroke-width="1.5"/>
+           <text x="${egoX + 13}" y="${carY + 18}" text-anchor="middle" font-family="Public Sans, sans-serif" font-size="12" font-weight="800" fill="var(--sign-red)">A</text>`
+        : ``;
+
+      // Headlight beam visualization when rain or fog
+      const headlightGlow = (state.weather === `rain` || state.weather === `fog`)
+        ? `<polygon points="${egoX + egoWidth},${carY + 6} ${egoX + egoWidth + 48},${carY - 6} ${egoX + egoWidth + 48},${carY + 34} ${egoX + egoWidth},${carY + 22}" fill="var(--sign-white)" fill-opacity="0.28"/>`
+        : ``;
+
+      const rearFogDot = state.weather === `fog`
+        ? `<rect x="${egoX - 4}" y="${carY + 18}" width="5" height="6" fill="var(--sign-red)"/>`
+        : ``;
+
+      return `
+        <svg viewBox="0 0 680 240" role="img" aria-label="Road schematic showing a ${calc.safeGap2s.toFixed(1)} meter 2-second following distance at ${calc.speedKmh} km/h">
+          <!-- Sky band -->
+          <rect x="0" y="0" width="680" height="86" fill="${skyColor}"/>
+          ${roadBands}
+          ${weatherOverlay}
+          ${laneLabels}
+
+          <!-- Sign in sky band -->
+          <circle cx="52" cy="40" r="24" fill="var(--sign-white)" stroke="var(--sign-red)" stroke-width="5"/>
+          <text x="52" y="46" text-anchor="middle" font-family="Public Sans, sans-serif" font-weight="800" font-size="${legalSpeed >= 100 ? 18 : 21}" fill="var(--sign-ink)">${legalSpeed}</text>
+          <text x="88" y="34" font-family="Public Sans, sans-serif" font-size="12" font-weight="800" fill="var(--on-surface)">LEGAL CEILING: ${legalSpeed} KM/H</text>
+          <text x="88" y="52" font-family="Public Sans, sans-serif" font-size="11" font-weight="600" fill="var(--on-surface-variant)">Computed at ${calc.speedKmh} km/h (${calc.mps.toFixed(1)} m/s)${isHighway ? ` · Keep 2 chevrons` : ``}</text>
+
+          <!-- Gap measurement bar between cars -->
+          <rect x="${egoX + egoWidth}" y="${carY - 22}" width="${reactPx}" height="8" fill="var(--data-1)"/>
+          <rect x="${egoX + egoWidth + reactPx}" y="${carY - 22}" width="${gapPx - reactPx}" height="8" fill="var(--data-3)"/>
+          <line x1="${egoX + egoWidth}" y1="${carY - 28}" x2="${egoX + egoWidth}" y2="${carY - 4}" stroke="var(--sign-white)" stroke-width="2"/>
+          <line x1="${leadX}" y1="${carY - 28}" x2="${leadX}" y2="${carY - 4}" stroke="var(--sign-white)" stroke-width="2"/>
+          <rect x="${egoX + egoWidth + Math.round(gapPx / 2) - 68}" y="${carY - 44}" width="136" height="20" fill="var(--on-surface)"/>
+          <text x="${egoX + egoWidth + Math.round(gapPx / 2)}" y="${carY - 30}" text-anchor="middle" font-family="Public Sans, sans-serif" font-size="11" font-weight="800" fill="var(--sign-white)">2s GAP: ${calc.safeGap2s.toFixed(1)} m</text>
+
+          ${headlightGlow}
+          ${rearFogDot}
+
+          <!-- Your vehicle -->
+          <rect x="${egoX}" y="${carY}" width="${egoWidth}" height="28" fill="var(--car-ego)" stroke="var(--sign-white)" stroke-width="2"/>
+          <rect x="${egoX + 26}" y="${carY + 4}" width="32" height="20" fill="var(--primary-container)"/>
+          ${probBadge}
+          <text x="${egoX + 41}" y="${carY + 42}" text-anchor="middle" font-family="Public Sans, sans-serif" font-size="10" font-weight="800" fill="var(--sign-white)">YOUR CAR</text>
+
+          <!-- Lead vehicle -->
+          <rect x="${leadX}" y="${carY}" width="${egoWidth}" height="28" fill="var(--car-lead)" stroke="var(--sign-white)" stroke-width="2"/>
+          <rect x="${leadX + 24}" y="${carY + 4}" width="30" height="20" fill="var(--surface-container)"/>
+          <text x="${leadX + 41}" y="${carY + 42}" text-anchor="middle" font-family="Public Sans, sans-serif" font-size="10" font-weight="800" fill="var(--sign-white)">VEHICLE AHEAD</text>
+        </svg>
+      `;
+    }
+
+    function renderMiniRoadSVG(kind) {
+      if (kind === `rencontre`) {
+        return `<svg class="roadmap-mini-svg" viewBox="0 0 120 44" aria-hidden="true">
+          <rect x="0" y="6" width="120" height="32" fill="var(--surface-container-high)"/>
+          <rect x="0" y="12" width="120" height="20" fill="var(--road-asphalt)"/>
+          <circle cx="38" cy="22" r="4" fill="var(--sign-white)"/>
+          <rect x="66" y="16" width="20" height="12" fill="var(--primary)"/>
+        </svg>`;
+      }
+      if (kind === `zone30`) {
+        return `<svg class="roadmap-mini-svg" viewBox="0 0 120 44" aria-hidden="true">
+          <rect x="0" y="8" width="120" height="28" fill="var(--road-asphalt)"/>
+          <line x1="0" y1="22" x2="120" y2="22" stroke="var(--sign-white)" stroke-width="1.5" stroke-dasharray="6 6"/>
+          <rect x="16" y="12" width="22" height="8" fill="var(--data-3)"/>
+        </svg>`;
+      }
+      if (kind === `urban`) {
+        return `<svg class="roadmap-mini-svg" viewBox="0 0 120 44" aria-hidden="true">
+          <rect x="0" y="6" width="120" height="32" fill="var(--road-asphalt)"/>
+          <rect x="0" y="4" width="120" height="4" fill="var(--outline-variant)"/>
+          <rect x="0" y="36" width="120" height="4" fill="var(--outline-variant)"/>
+          <rect x="82" y="10" width="8" height="24" fill="var(--sign-white)" fill-opacity="0.8"/>
+        </svg>`;
+      }
+      if (kind === `twoway`) {
+        return `<svg class="roadmap-mini-svg" viewBox="0 0 120 44" aria-hidden="true">
+          <rect x="0" y="8" width="120" height="28" fill="var(--road-asphalt)"/>
+          <line x1="0" y1="22" x2="120" y2="22" stroke="var(--sign-white)" stroke-width="2" stroke-dasharray="10 8"/>
+        </svg>`;
+      }
+      if (kind === `divided`) {
+        return `<svg class="roadmap-mini-svg" viewBox="0 0 120 44" aria-hidden="true">
+          <rect x="0" y="4" width="120" height="15" fill="var(--road-asphalt)"/>
+          <rect x="0" y="19" width="120" height="6" fill="var(--road-median)"/>
+          <rect x="0" y="25" width="120" height="15" fill="var(--road-asphalt)"/>
+        </svg>`;
+      }
+      return `<svg class="roadmap-mini-svg" viewBox="0 0 120 44" aria-hidden="true">
+        <rect x="0" y="4" width="120" height="16" fill="var(--road-asphalt)"/>
+        <rect x="0" y="20" width="120" height="4" fill="var(--road-median)"/>
+        <rect x="0" y="24" width="120" height="16" fill="var(--road-asphalt)"/>
+        <line x1="0" y1="12" x2="120" y2="12" stroke="var(--sign-white)" stroke-width="1.5" stroke-dasharray="8 6"/>
+        <line x1="0" y1="32" x2="120" y2="32" stroke="var(--sign-white)" stroke-width="1.5" stroke-dasharray="8 6"/>
+      </svg>`;
+    }
+
+    function renderRoadmap(state) {
+      const grid = document.getElementById(`roadmap-grid`);
+      if (!grid) return;
+
+      const activeKey = state.roadType === `urban` ? state.urbanZone : state.roadType;
+      const badge = document.getElementById(`roadmap-active-badge`);
+
+      let html = ``;
+      for (let i = 0; i < ROADMAP_NODES.length; i++) {
+        const node = ROADMAP_NODES[i];
+        const isCurrent = (node.id === activeKey) || (node.id === `urban` && state.roadType === `urban` && state.urbanZone === `standard`);
+        if (isCurrent && badge) {
+          badge.textContent = `Active: ${node.title}`;
+        }
+        html += `
+          <button type="button" class="roadmap-node" aria-current="${isCurrent ? `true` : `false`}" onclick="selectRoadmapNode('${node.id}')">
+            <div>
+              <div class="roadmap-speed">${node.speed} <small>km/h</small></div>
+              <div class="roadmap-name">${node.title}</div>
+              <div class="roadmap-fr">${node.fr}</div>
+              ${renderMiniRoadSVG(node.kind)}
+            </div>
+            <div class="roadmap-rules-mini">
+              <span>Rain: <strong>${node.rain} km/h</strong></span>
+              <span>Probatoire: <strong>${node.prob} km/h</strong></span>
+              <span>Fog (&lt;50 m): <strong>${node.fog} km/h</strong></span>
+            </div>
+          </button>
+        `;
+      }
+      grid.innerHTML = html;
+    }
+
+    function renderDistanceTable(activeSpeed) {
+      const tbody = document.getElementById(`distance-table-body`);
+      if (!tbody) return;
+
+      const benchmarks = [
+        { speed: 20, label: `Zone de rencontre` },
+        { speed: 30, label: `Zone 30` },
+        { speed: 50, label: `Agglomération / Fog < 50 m` },
+        { speed: 80, label: `Two-way rural default` },
+        { speed: 90, label: `Signed overtaking section` },
+        { speed: 100, label: `Expressway rain / Probatoire` },
+        { speed: 110, label: `Expressway dry / Autoroute rain` },
+        { speed: 130, label: `Autoroute dry (Standard)` }
+      ];
+
+      let rowsHtml = ``;
+      const maxGap = 130 / 1.8; // 72.22 m
+
+      for (let i = 0; i < benchmarks.length; i++) {
+        const row = benchmarks[i];
+        const c = calculateDistances(row.speed);
+        const isMatch = row.speed === activeSpeed;
+        const totalPct = Math.min(100, (c.safeGap2s / maxGap) * 100);
+        const reactPct = totalPct * 0.5;
+        const remainPct = totalPct * 0.5;
+
+        rowsHtml += `
+          <tr class="${isMatch ? `is-active-row` : ``}">
+            <td><strong>${row.speed} km/h</strong></td>
+            <td>${row.label}</td>
+            <td class="num">${c.reaction1s.toFixed(1)} m</td>
+            <td class="num"><strong>${c.safeGap2s.toFixed(1)} m</strong></td>
+            <td class="num">${Math.round(c.etgSixRule)} m</td>
+            <td class="num">${c.brakingMultVs50.toFixed(2)}&times;</td>
+            <td>
+              <div class="bar-track" aria-hidden="true">
+                <div class="bar-react" style="width: ${reactPct.toFixed(1)}%;"></div>
+                <div class="bar-gap" style="width: ${remainPct.toFixed(1)}%;"></div>
+              </div>
+            </td>
+          </tr>
+        `;
+      }
+      tbody.innerHTML = rowsHtml;
+    }
+
+    function renderRegulations(state, result) {
+      const grid = document.getElementById(`regulations-grid`);
+      if (!grid) return;
+
+      const road = ROAD_CONFIG[state.roadType];
+
+      // Lighting card content based on weather (grounded in Error Log #001 + R416-6 + R416-7)
+      let lightingClass = `inset-box`;
+      let lightingTitle = `Lighting &amp; Visibility Rules (Clear Weather)`;
+      let lightingPoints = `
+        <li><strong>High beams (<em>feux de route</em>):</strong> Permitted outside lit urban areas when alone; dip to low beams immediately when meeting oncoming traffic or following closely (Art. R416-6).</li>
+        <li><strong>Fog lights:</strong> Off in clear conditions (front &amp; rear fog lights are reserved for poor visibility).</li>
+        <li><strong>Sudden fog / rain drop:</strong> If visibility falls under 50 m, drop immediately to 50 km/h regardless of road type (Art. R413-4).</li>
+      `;
+
+      if (state.weather === `rain`) {
+        lightingClass = `inset-box inset-box--error`;
+        lightingTitle = `Lighting Alert — Rain / Précipitations (Error Log #001 Trap)`;
+        lightingPoints = `
+          <li><strong>Dipped headlights (<em>feux de croisement</em>):</strong> Use low beams in rain and reduced visibility (Art. R416-6).</li>
+          <li><strong>Front fog lights (<em>feux de brouillard avant</em>):</strong> Permitted to replace or supplement low beams in heavy rain or snowfall (Art. R416-7 I).</li>
+          <li><strong>Rear fog light FORBIDDEN:</strong> Never use the rear fog light in rain alone—it is strictly for dense fog or heavy snow because it dazzles drivers behind you (3-point penalty under Art. R416-7).</li>
+        `;
+      } else if (state.weather === `fog`) {
+        lightingClass = `inset-box inset-box--warning`;
+        lightingTitle = `Lighting Alert — Visibility &lt; 50 m / Dense Fog`;
+        lightingPoints = `
+          <li><strong>Low beams + Front fog lights:</strong> Turn on dipped headlights and front fog lights (never high beams, which reflect off fog droplets).</li>
+          <li><strong>Rear fog light PERMITTED:</strong> Use the rear fog light in dense fog or heavy snowfall, and turn it off as soon as visibility clears so you do not blind trailing drivers (Art. R416-7).</li>
+          <li><strong>Speed cap 50 km/h:</strong> Mandatory maximum on all roads, including autoroutes (Art. R413-4).</li>
+        `;
+      }
+
+      // Driver status card
+      const driverCard = state.driverStatus === `probatoire`
+        ? `
+          <div class="inset-box inset-box--warning">
+            <h3>Permis Probatoire Obligations (Art. L223-1 &amp; R413-5)</h3>
+            <ul class="rule-list">
+              <li><strong>Rear <em>A</em> disc mandatory:</strong> Must remain visibly affixed at the back of the vehicle throughout the probationary period (2nd-class fine if missing).</li>
+              <li><strong>Probationary speed caps:</strong> 110 km/h on 130 autoroutes, 100 km/h on divided expressways, 80 km/h on two-way roads (even where signed 90 km/h).</li>
+              <li><strong>Points progression:</strong> Starts at 6 points (half of 12). Gains +2 points/year over 3 years—or +3 points/year over 2 years with early accompanied driving (AAC)—if no point-losing offence occurs.</li>
+            </ul>
+          </div>
+        `
+        : `
+          <div class="inset-box inset-box--positive">
+            <h3>Standard Licence Baseline &amp; Exam Mechanics</h3>
+            <ul class="rule-list">
+              <li><strong>Baseline assumption:</strong> ETG exam questions assume a non-probationary car driver unless stated otherwise.</li>
+              <li><strong>Zero partial credit:</strong> Each of the 40 exam questions allows 20 seconds and has 1 to 4 right answers. Missing one box or ticking one wrong box scores 0 points (35/40 required to pass).</li>
+              <li><strong>Wording trap alert:</strong> Scrutinize absolutes like <em>toujours</em>, <em>jamais</em>, <em>seulement</em>, and <em>uniquement</em>—they frequently fail due to weather or road exceptions.</li>
+            </ul>
+          </div>
+        `;
+
+      // Roadway specific card
+      let specificHtml = ``;
+      for (let i = 0; i < road.specificRules.length; i++) {
+        specificHtml += `<li>${road.specificRules[i]}</li>`;
+      }
+
+      grid.innerHTML = `
+        <div class="${lightingClass}">
+          <h3>${lightingTitle}</h3>
+          <ul class="rule-list">${lightingPoints}</ul>
+        </div>
+        ${driverCard}
+        <div class="inset-box">
+          <h3>${road.name} — Active Roadway Rules</h3>
+          <ul class="rule-list">
+            <li><strong>Vulnerable users:</strong> ${road.clearance}</li>
+            ${specificHtml}
+          </ul>
+        </div>
+        <div class="inset-box">
+          <h3>Summary Sheet for Current Selection</h3>
+          <ul class="summary-list">
+            <li><span class="summary-key">Road network</span><span class="summary-val">${result.label}</span></li>
+            <li><span class="summary-key">Weather state</span><span class="summary-val">${state.weather === `dry` ? `Dry / Temps clair` : state.weather === `rain` ? `Rain / Précipitations` : `Visibility < 50 m / Brouillard`}</span></li>
+            <li><span class="summary-key">Driver status</span><span class="summary-val">${state.driverStatus === `probatoire` ? `Permis probatoire (A)` : `Standard non-probationary`}</span></li>
+            <li><span class="summary-key">Legal maximum</span><span class="summary-val"><strong>${result.limit} km/h</strong></span></li>
+            <li><span class="summary-key">2-second safe gap</span><span class="summary-val"><strong>${calculateDistances(state.customSpeed !== null ? state.customSpeed : result.limit).safeGap2s.toFixed(1)} m</strong></span></li>
+          </ul>
+        </div>
+      `;
+    }
+
+    function updateUI() {
+      const result = computeLegalSpeed(appState);
+      const activeSpeed = appState.customSpeed !== null ? appState.customSpeed : result.limit;
+      const calc = calculateDistances(activeSpeed);
+
+      // Update toggle pressed states
+      const roadIds = {
+        urban: `road-urban`,
+        twoway: `road-twoway`,
+        divided: `road-divided`,
+        autoroute: `road-autoroute`
+      };
+      for (const key in roadIds) {
+        const btn = document.getElementById(roadIds[key]);
+        if (btn) btn.setAttribute(`aria-pressed`, key === appState.roadType ? `true` : `false`);
+      }
+
+      // Urban & Twoway conditional subpanels
+      const urbanPanel = document.getElementById(`urban-subpanel`);
+      if (urbanPanel) urbanPanel.hidden = appState.roadType !== `urban`;
+      const twowayPanel = document.getElementById(`twoway-subpanel`);
+      if (twowayPanel) twowayPanel.hidden = appState.roadType !== `twoway`;
+
+      const zStd = document.getElementById(`zone-standard`);
+      const z30 = document.getElementById(`zone-30`);
+      const zRen = document.getElementById(`zone-rencontre`);
+      if (zStd) zStd.setAttribute(`aria-pressed`, appState.urbanZone === `standard` ? `true` : `false`);
+      if (z30) z30.setAttribute(`aria-pressed`, appState.urbanZone === `zone30` ? `true` : `false`);
+      if (zRen) zRen.setAttribute(`aria-pressed`, appState.urbanZone === `rencontre` ? `true` : `false`);
+
+      const tw80 = document.getElementById(`twoway-80`);
+      const tw90 = document.getElementById(`twoway-90`);
+      if (tw80) tw80.setAttribute(`aria-pressed`, !appState.twowaySigned90 ? `true` : `false`);
+      if (tw90) tw90.setAttribute(`aria-pressed`, appState.twowaySigned90 ? `true` : `false`);
+
+      // Weather buttons
+      const weatherIds = { dry: `weather-dry`, rain: `weather-rain`, fog: `weather-fog` };
+      for (const key in weatherIds) {
+        const btn = document.getElementById(weatherIds[key]);
+        if (btn) btn.setAttribute(`aria-pressed`, key === appState.weather ? `true` : `false`);
+      }
+
+      // Driver buttons
+      const dStd = document.getElementById(`driver-standard`);
+      const dProb = document.getElementById(`driver-probatoire`);
+      if (dStd) dStd.setAttribute(`aria-pressed`, appState.driverStatus === `standard` ? `true` : `false`);
+      if (dProb) dProb.setAttribute(`aria-pressed`, appState.driverStatus === `probatoire` ? `true` : `false`);
+
+      // Sync speed slider & numeric input cleanly
+      const slider = document.getElementById(`slider-speed`);
+      const numInput = document.getElementById(`input-speed`);
+      if (slider && document.activeElement !== slider) slider.value = String(activeSpeed);
+      if (numInput && document.activeElement !== numInput) numInput.value = String(activeSpeed);
+
+      const overrideNote = document.getElementById(`speed-override-note`);
+      if (overrideNote) {
+        if (appState.customSpeed === null || appState.customSpeed === result.limit) {
+          overrideNote.textContent = `Synced to current legal ceiling (${result.limit} km/h). Adjust to calculate distances at a lower driving speed.`;
+          overrideNote.style.color = `var(--on-surface-variant)`;
+        } else if (appState.customSpeed > result.limit) {
+          overrideNote.textContent = `Warning: ${appState.customSpeed} km/h exceeds the legal limit of ${result.limit} km/h for these conditions.`;
+          overrideNote.style.color = `var(--error)`;
+        } else {
+          overrideNote.textContent = `Custom test speed: ${appState.customSpeed} km/h (below ${result.limit} km/h legal limit). Click "Match legal max" to re-sync.`;
+          overrideNote.style.color = `var(--tertiary)`;
+        }
+      }
+
+      // Verdict Panel
+      const verdictPanel = document.getElementById(`verdict-panel`);
+      if (verdictPanel) {
+        if (result.isCapped || appState.weather === `fog`) {
+          verdictPanel.classList.add(`is-capped`);
+        } else {
+          verdictPanel.classList.remove(`is-capped`);
+        }
+      }
+
+      const signWrap = document.getElementById(`speed-sign-svg`);
+      if (signWrap) signWrap.innerHTML = renderSpeedSign(result.limit);
+
+      const ctxLabel = document.getElementById(`verdict-context-label`);
+      if (ctxLabel) {
+        const wTxt = appState.weather === `dry` ? `Dry` : appState.weather === `rain` ? `Rain` : `Visibility < 50 m`;
+        const dTxt = appState.driverStatus === `probatoire` ? `Permis Probatoire` : `Standard Driver`;
+        ctxLabel.textContent = `${result.label} · ${wTxt} · ${dTxt}`;
+      }
+
+      const vSpeed = document.getElementById(`verdict-speed`);
+      if (vSpeed) vSpeed.textContent = String(result.limit);
+
+      const tagsWrap = document.getElementById(`verdict-tags`);
+      if (tagsWrap) {
+        let tagHtml = ``;
+        for (let i = 0; i < result.tags.length; i++) {
+          const t = result.tags[i];
+          const cls = t.kind === `alert` ? `status-tag status-tag--alert` : t.kind === `warn` ? `status-tag status-tag--warn` : `status-tag`;
+          tagHtml += `<span class="${cls}">${t.text}</span>`;
+        }
+        tagsWrap.innerHTML = tagHtml;
+      }
+
+      const vRat = document.getElementById(`verdict-rationale`);
+      if (vRat) vRat.textContent = result.rationale;
+
+      // KPI tiles
+      const kpiGap = document.getElementById(`kpi-gap-exact`);
+      const kpiGapRule = document.getElementById(`kpi-gap-rule`);
+      const kpiChev = document.getElementById(`kpi-chevrons`);
+      const kpiChevSub = document.getElementById(`kpi-chevrons-sub`);
+      const kpiReact = document.getElementById(`kpi-reaction`);
+      const kpiBrake = document.getElementById(`kpi-braking-mult`);
+
+      if (kpiGap) kpiGap.textContent = `${calc.safeGap2s.toFixed(1)} m`;
+      if (kpiGapRule) {
+        const weatherExtra = appState.weather !== `dry` ? ` · increase in ${appState.weather}` : ``;
+        kpiGapRule.textContent = `ETG ×6 rule: ~${Math.round(calc.etgSixRule)} m (≥ ${Math.round(calc.halfSpeed)} m)${weatherExtra}`;
+      }
+      if (kpiChev) {
+        kpiChev.textContent = (appState.roadType === `autoroute` || appState.roadType === `divided`)
+          ? (appState.weather === `dry` ? `2+ Chevrons` : `3+ Chevrons`)
+          : `2-Sec Count`;
+      }
+      if (kpiChevSub) {
+        kpiChevSub.textContent = (appState.roadType === `autoroute` || appState.roadType === `divided`)
+          ? (appState.weather === `dry` ? `Keep ≥ 2 edge chevrons apart` : `Widen past 2 chevrons on wet road`)
+          : `Count "one, two" past fixed landmark`;
+      }
+      if (kpiReact) kpiReact.textContent = `${calc.reaction1s.toFixed(1)} m`;
+      if (kpiBrake) kpiBrake.textContent = `Braking distance: ${calc.brakingMultVs50.toFixed(1)}× vs. 50 km/h`;
+
+      // Live Scene
+      const sceneMeta = document.getElementById(`scene-meta`);
+      if (sceneMeta) sceneMeta.textContent = `${calc.speedKmh} km/h = ${calc.mps.toFixed(1)} m/s · 2 s = ${calc.safeGap2s.toFixed(1)} m`;
+
+      const sceneSvg = document.getElementById(`road-scene-svg`);
+      if (sceneSvg) sceneSvg.innerHTML = renderRoadSceneSVG(appState, result.limit, calc);
+
+      const sceneCap = document.getElementById(`scene-caption`);
+      if (sceneCap) {
+        sceneCap.textContent = (appState.roadType === `autoroute` || appState.roadType === `divided`)
+          ? `At ${calc.speedKmh} km/h, your car covers ${calc.mps.toFixed(1)} meters every second. Maintain at least ${calc.safeGap2s.toFixed(1)} m (minimum 2 highway chevrons${appState.weather !== `dry` ? `, widened for ${appState.weather}` : ``}).`
+          : `At ${calc.speedKmh} km/h, you travel ${calc.reaction1s.toFixed(1)} m during a 1-second reaction alone and need at least ${calc.safeGap2s.toFixed(1)} m to maintain a 2-second buffer.`;
+      }
+
+      renderRoadmap(appState);
+      renderDistanceTable(activeSpeed);
+      renderRegulations(appState, result);
+      persistState();
+    }
+
+    // Hoisted event handlers
+    function setRoadType(roadType) {
+      appState.roadType = roadType;
+      appState.customSpeed = null;
+      updateUI();
+    }
+
+    function setUrbanZone(zone) {
+      appState.roadType = `urban`;
+      appState.urbanZone = zone;
+      appState.customSpeed = null;
+      updateUI();
+    }
+
+    function setTwowaySigned90(is90) {
+      appState.roadType = `twoway`;
+      appState.twowaySigned90 = Boolean(is90);
+      appState.customSpeed = null;
+      updateUI();
+    }
+
+    function setWeather(weather) {
+      appState.weather = weather;
+      appState.customSpeed = null;
+      updateUI();
+    }
+
+    function setDriverStatus(status) {
+      appState.driverStatus = status;
+      appState.customSpeed = null;
+      updateUI();
+    }
+
+    function syncFromSlider(val) {
+      const parsed = Math.max(10, Math.min(130, parseInt(val, 10) || 50));
+      appState.customSpeed = parsed;
+      const numInput = document.getElementById(`input-speed`);
+      if (numInput) numInput.value = String(parsed);
+      updateUI();
+    }
+
+    function syncFromNumber(val) {
+      const parsed = parseInt(val, 10);
+      if (isNaN(parsed)) return;
+      const clamped = Math.max(10, Math.min(130, parsed));
+      appState.customSpeed = clamped;
+      const slider = document.getElementById(`slider-speed`);
+      if (slider) slider.value = String(clamped);
+      updateUI();
+    }
+
+    function matchLegalMax() {
+      appState.customSpeed = null;
+      updateUI();
+    }
+
+    function selectRoadmapNode(nodeId) {
+      for (let i = 0; i < ROADMAP_NODES.length; i++) {
+        const node = ROADMAP_NODES[i];
+        if (node.id === nodeId) {
+          appState.roadType = node.roadType;
+          appState.urbanZone = node.urbanZone;
+          appState.twowaySigned90 = node.twowaySigned90;
+          appState.customSpeed = null;
+          break;
+        }
+      }
+      updateUI();
+    }
+
+    function applyPreset(presetId) {
+      if (presetId === `autoroute_rain`) {
+        appState = { roadType: `autoroute`, urbanZone: `standard`, twowaySigned90: false, weather: `rain`, driverStatus: `standard`, customSpeed: null };
+      } else if (presetId === `dense_fog`) {
+        appState = { roadType: `autoroute`, urbanZone: `standard`, twowaySigned90: false, weather: `fog`, driverStatus: `standard`, customSpeed: null };
+      } else if (presetId === `probatoire_rural`) {
+        appState = { roadType: `twoway`, urbanZone: `standard`, twowaySigned90: true, weather: `dry`, driverStatus: `probatoire`, customSpeed: null };
+      } else {
+        appState = { roadType: `urban`, urbanZone: `standard`, twowaySigned90: false, weather: `dry`, driverStatus: `standard`, customSpeed: null };
+      }
+      updateUI();
+      showFeedback(`Loaded scenario preset.`);
+    }
+
+    function resetDefaults(btn) {
+      if (btn && btn.dataset.armed !== `true`) {
+        btn.dataset.armed = `true`;
+        const span = btn.querySelector(`span`);
+        if (span) span.textContent = `Click again to confirm reset`;
+        showFeedback(`Click reset once more to restore standard motorway defaults.`);
+        return;
+      }
+      if (btn) {
+        btn.dataset.armed = `false`;
+        const span = btn.querySelector(`span`);
+        if (span) span.textContent = `Reset to defaults`;
+      }
+      appState = Object.assign({}, DEFAULT_STATE);
+      updateUI();
+      showFeedback(`Defaults restored.`);
+    }
+
+    function exportSummary() {
+      const result = computeLegalSpeed(appState);
+      const activeSpeed = appState.customSpeed !== null ? appState.customSpeed : result.limit;
+      const calc = calculateDistances(activeSpeed);
+
+      const content = [
+        `CODE DE LA ROUTE (ETG) - SPEED & SAFETY DISTANCE SHEET`,
+        `====================================================`,
+        `Road Type: ${result.label}`,
+        `Weather: ${appState.weather}`,
+        `Driver Status: ${appState.driverStatus}`,
+        `Legal Speed Limit: ${result.limit} km/h`,
+        `Rationale: ${result.rationale}`,
+        ``,
+        `CALCULATED DISTANCES AT ${calc.speedKmh} KM/H`,
+        `- Speed in m/s: ${calc.mps.toFixed(2)} m/s`,
+        `- 1-second reaction distance: ${calc.reaction1s.toFixed(1)} m`,
+        `- 2-second safe following distance: ${calc.safeGap2s.toFixed(1)} m`,
+        `- ETG x6 mental rule: ~${Math.round(calc.etgSixRule)} m`,
+        `- Braking distance multiplier vs 50 km/h: ${calc.brakingMultVs50.toFixed(2)}x`
+      ].join(`\n`);
+
+      if (window.notebookAppApi && typeof window.notebookAppApi.triggerFileDownload === `function`) {
+        window.notebookAppApi.triggerFileDownload({
+          content: content,
+          contentType: `text/plain`,
+          encoding: `UTF-8`,
+          filename: `code-route-speed-summary.txt`
+        });
+        showFeedback(`Exported code-route-speed-summary.txt.`);
+      } else {
+        showFeedback(`Summary prepared (${result.limit} km/h, ${calc.safeGap2s.toFixed(1)} m gap).`);
+      }
+    }
+
+    function showFeedback(msg) {
+      const el = document.getElementById(`action-feedback`);
+      if (el) el.textContent = msg;
+    }
+
+    async function persistState() {
+      try {
+        if (window.notebookAppApi && typeof window.notebookAppApi.setAppState === `function`) {
+          await window.notebookAppApi.setAppState(appState);
+        }
+      } catch (e) {
+        // Ignore persistence errors in standalone preview
+      }
+    }
+
+    async function initApp() {
+      try {
+        if (window.notebookAppApi && typeof window.notebookAppApi.getAppState === `function`) {
+          const saved = await window.notebookAppApi.getAppState();
+          if (saved && typeof saved === `object`) {
+            appState = Object.assign({}, DEFAULT_STATE, saved);
+          }
+        }
+      } catch (e) {
+        // Fallback to defaults
+      }
+
+      updateUI();
+
+      if (window.lucide && typeof window.lucide.createIcons === `function`) {
+        window.lucide.createIcons();
+      }
+
+      if (window.notebookAppApi && typeof window.notebookAppApi.notifyAppReady === `function`) {
+        window.notebookAppApi.notifyAppReady();
+      }
+    }
+
+    document.addEventListener(`DOMContentLoaded`, initApp);
+  </script>
+<a href="../index.html#/tools" style="position:fixed;left:16px;bottom:16px;z-index:9999;background:#ff6b4a;color:#fff;font:800 15px/1 Nunito,system-ui,sans-serif;padding:12px 18px;border-radius:999px;text-decoration:none;box-shadow:0 4px 0 #b9432c">← Back to study site</a>
+</body>
+</html>

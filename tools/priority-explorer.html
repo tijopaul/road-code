@@ -1,0 +1,2059 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="artifact-type" content="tool">
+  <meta name="design-style" content="handbook">
+  <title>Code de la Route — Interactive French Road-Scenario Map</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: light;
+
+      /* Page and surfaces (Handbook) */
+      --background: #ffffff;
+      --surface-container-low: #f3f2f1;
+      --surface-container: #e8e7e5;
+      --surface-container-high: #dbdad9;
+
+      /* Ink */
+      --on-surface: #0b0c0c;
+      --on-surface-variant: #505a5f;
+
+      /* Rules */
+      --outline: #0b0c0c;
+      --outline-variant: #b1b4b6;
+
+      /* Accents */
+      --primary: #162e51;
+      --on-primary: #ffffff;
+      --primary-container: #d2e2f1;
+      --on-primary-container: #0c2d4a;
+      --secondary: #4c2c92;
+      --tertiary: #1a569e;
+      --error: #d4351c;
+      --on-error: #ffffff;
+
+      /* Semantic */
+      --positive: #00703c;
+      --positive-container: #e5f3ec;
+      --on-positive-container: #004d29;
+      --warning: #a34e00;
+      --warning-container: #fff2e2;
+      --on-warning-container: #6b3300;
+      --error-container: #fdf3f2;
+      --focus: #162e51;
+
+      /* Data series */
+      --data-1: #1a569e;
+      --data-2: #c75a0a;
+      --data-3: #28a197;
+      --data-4: #4c2c92;
+      --data-context: #b1b4b6;
+
+      /* Road-map & French signage palette */
+      --map-ground: #eaedf0;
+      --map-block: #dfe4e8;
+      --map-park: #d4e3d7;
+      --map-shared-paving: #dfd8cc;
+      --road-asphalt: #3a4047;
+      --road-shoulder: #525962;
+      --road-marking: #ffffff;
+      --road-curb: #c7cdd3;
+      --sign-red: #d4351c;
+      --sign-blue: #1a569e;
+      --sign-white: #ffffff;
+      --car-ego: #1a569e;
+      --car-ego-roof: #d2e2f1;
+      --car-other: #c75a0a;
+      --car-other-roof: #ffe1c7;
+      --car-cross: #4c2c92;
+      --car-cross-roof: #e5ddf7;
+      --priority-go: #15804b;
+      --priority-yield: #d96b16;
+      --priority-stop: #d4351c;
+
+      /* Fonts */
+      --font-headline: 'Public Sans', sans-serif;
+      --font-body: 'Public Sans', sans-serif;
+      --font-label: 'Public Sans', sans-serif;
+
+      /* Type scale (Focused Tool) */
+      --display-size: clamp(1.75rem, 1.4rem + 1.2vw, 2.35rem);
+      --headline-size: clamp(1.25rem, 1.1rem + 0.5vw, 1.55rem);
+      --subhead-size: clamp(1.0625rem, 1rem + 0.25vw, 1.1875rem);
+      --body-size: clamp(0.9375rem, 0.9rem + 0.15vw, 1rem);
+      --label-size: 0.75rem;
+
+      /* Spacing scale (4pt base) */
+      --space-xs: 0.25rem;
+      --space-sm: 0.5rem;
+      --space-md: 1rem;
+      --space-lg: 1.5rem;
+      --space-xl: 2.5rem;
+      --space-2xl: 4rem;
+
+      /* Shape (Handbook square corners) */
+      --rounded: 0;
+      --rounded-lg: 0;
+      --rounded-full: 0;
+
+      /* Style effects */
+      --top-index-rule: 6px solid var(--primary);
+      --inset-rule: 5px solid var(--tertiary);
+      --inset-rule-error: 5px solid var(--error);
+      --inset-rule-positive: 5px solid var(--positive);
+      --inset-rule-warning: 5px solid var(--warning);
+      --button-ground: 0 2px 0 var(--on-surface);
+      --button-ground-secondary: 0 2px 0 var(--outline-variant);
+      --focus-yellow: #ffdd00;
+      --focus-ring: 3px solid var(--focus-yellow);
+      --focus-bar: inset 0 0 0 2px var(--on-surface);
+      --focus-underline: 0 -2px var(--focus-yellow), 0 4px var(--on-surface);
+
+      /* Motion */
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+      --dur-micro: 120ms;
+      --dur-short: 220ms;
+      --dur-long: 420ms;
+    }
+
+    /* Base reset */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { overflow-x: clip; margin: 0; padding: 0; }
+    header { position: static !important; }
+
+    body {
+      background: var(--background);
+      color: var(--on-surface);
+      font-family: var(--font-body);
+      font-size: var(--body-size);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page-grid {
+      display: grid;
+      gap: var(--space-lg);
+      padding: var(--space-lg);
+      max-width: 1240px;
+      margin: 0 auto;
+      overflow: hidden;
+    }
+    .page-grid * { min-width: 0; }
+
+    /* Typography */
+    h1, h2, h3, h4 {
+      font-family: var(--font-headline);
+      color: var(--on-surface);
+      margin: 0;
+      letter-spacing: -0.01em;
+      line-height: 1.15;
+    }
+    h1 {
+      font-size: var(--display-size);
+      font-weight: 800;
+    }
+    h2 {
+      font-size: var(--headline-size);
+      font-weight: 800;
+    }
+    h3 {
+      font-size: var(--subhead-size);
+      font-weight: 700;
+    }
+    p {
+      margin: 0;
+      max-width: 68ch;
+    }
+
+    /* Top Index Header */
+    .index-header {
+      border-top: var(--top-index-rule);
+      border-bottom: 1px solid var(--on-surface);
+      padding: var(--space-sm) 0;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--space-sm);
+      font-family: var(--font-label);
+      font-weight: 700;
+      font-size: var(--label-size);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .index-header-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .status-tag {
+      display: inline-block;
+      background: var(--primary-container);
+      color: var(--on-primary-container);
+      font-family: var(--font-label);
+      font-weight: 700;
+      font-size: var(--label-size);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: var(--space-xs) var(--space-sm);
+      border-radius: var(--rounded-full);
+    }
+    .status-tag--positive {
+      background: var(--positive-container);
+      color: var(--on-positive-container);
+    }
+    .status-tag--warning {
+      background: var(--warning-container);
+      color: var(--on-warning-container);
+    }
+
+    .page-intro {
+      display: grid;
+      gap: var(--space-sm);
+      padding-bottom: var(--space-md);
+      border-bottom: 1px solid var(--outline-variant);
+    }
+    .page-lede {
+      color: var(--on-surface-variant);
+      font-size: var(--subhead-size);
+      max-width: 72ch;
+    }
+
+    /* Step Badge */
+    .step-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      flex-shrink: 0;
+      background: var(--primary);
+      color: var(--on-primary);
+      font-weight: 800;
+      font-size: 0.875rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Zone Navigation Strip */
+    .zone-nav {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: var(--space-sm);
+    }
+    .zone-tab {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--space-xs);
+      text-align: left;
+      padding: var(--space-sm) var(--space-md);
+      min-height: 44px;
+      background: var(--surface-container-low);
+      color: var(--on-surface);
+      border: 2px solid var(--outline-variant);
+      border-radius: var(--rounded);
+      font-family: inherit;
+      cursor: pointer;
+      transition: background-color var(--dur-micro) var(--ease-out), border-color var(--dur-micro) var(--ease-out);
+    }
+    .zone-tab:hover {
+      background: var(--surface-container);
+      border-color: var(--on-surface);
+    }
+    .zone-tab.is-active {
+      background: var(--background);
+      border-color: var(--primary);
+      box-shadow: inset 5px 0 0 var(--primary);
+    }
+    .zone-tab:focus-visible {
+      outline: var(--focus-ring);
+      outline-offset: 0;
+      box-shadow: var(--focus-bar);
+    }
+    .zone-tab-top {
+      display: flex;
+      width: 100%;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-xs);
+    }
+    .zone-tab-title {
+      font-weight: 700;
+      font-size: var(--body-size);
+      line-height: 1.25;
+    }
+    .zone-tab-sub {
+      font-size: var(--label-size);
+      color: var(--on-surface-variant);
+    }
+    .zone-tab-state {
+      font-size: var(--label-size);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--on-surface-variant);
+    }
+    .zone-tab-state.is-passed {
+      color: var(--positive);
+    }
+    .zone-tab-state.is-missed {
+      color: var(--error);
+    }
+
+    /* Main 2-column Interactive Workspace */
+    .workspace-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+      gap: var(--space-lg);
+      align-items: start;
+    }
+
+    /* Map Panel */
+    .map-panel {
+      display: grid;
+      gap: var(--space-md);
+    }
+    .map-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: var(--space-sm);
+    }
+    .map-caption {
+      font-size: var(--label-size);
+      color: var(--on-surface-variant);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .map-frame {
+      border: 2px solid var(--outline);
+      background: var(--map-ground);
+      position: relative;
+      min-height: 440px;
+    }
+    .road-map-svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      min-height: 440px;
+      user-select: none;
+    }
+
+    /* Interactive SVG Zones */
+    .svg-zone {
+      cursor: pointer;
+    }
+    .svg-zone:focus-visible {
+      outline: none;
+    }
+    .svg-zone .zone-hit-border {
+      fill: transparent;
+      stroke: var(--outline-variant);
+      stroke-width: 2;
+      transition: stroke var(--dur-micro) var(--ease-out), stroke-width var(--dur-micro) var(--ease-out);
+    }
+    .svg-zone:hover .zone-hit-border {
+      stroke: var(--tertiary);
+      stroke-width: 3;
+    }
+    .svg-zone.is-active .zone-hit-border {
+      stroke: var(--primary);
+      stroke-width: 4;
+    }
+    .svg-zone:focus-visible .zone-hit-border {
+      stroke: var(--focus-yellow);
+      stroke-width: 5;
+    }
+    .zone-pill-bg {
+      fill: var(--primary);
+    }
+    .svg-zone.is-active .zone-pill-bg {
+      fill: var(--tertiary);
+    }
+    .zone-pill-text {
+      fill: var(--on-primary);
+      font-family: var(--font-label);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+    }
+    .zone-sub-label {
+      fill: var(--on-surface);
+      font-family: var(--font-label);
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .zone-badge-bg {
+      fill: var(--background);
+      stroke: var(--outline);
+      stroke-width: 1.5;
+    }
+
+    /* SVG Road Elements */
+    .road-fill { fill: var(--road-asphalt); }
+    .road-shoulder-fill { fill: var(--road-shoulder); }
+    .shared-fill { fill: var(--map-shared-paving); }
+    .block-fill { fill: var(--map-block); }
+    .park-fill { fill: var(--map-park); }
+    .road-curb-stroke { stroke: var(--road-curb); stroke-width: 2; fill: none; }
+    .marking-solid { stroke: var(--road-marking); stroke-width: 2.5; fill: none; }
+    .marking-dash { stroke: var(--road-marking); stroke-width: 2.2; stroke-dasharray: 9 7; fill: none; }
+    .marking-yield-dash { stroke: var(--road-marking); stroke-width: 4.5; stroke-dasharray: 8 6; fill: none; }
+    .marking-stop-solid { stroke: var(--road-marking); stroke-width: 5; fill: none; }
+
+    /* Signs inside SVG */
+    .sign-pole { stroke: var(--on-surface); stroke-width: 2; }
+    .sign-white { fill: var(--sign-white); }
+    .sign-red-stroke { stroke: var(--sign-red); stroke-width: 3; }
+    .sign-blue-fill { fill: var(--sign-blue); }
+    .sign-ink { fill: var(--on-surface); }
+    .sign-ink-stroke { stroke: var(--on-surface); stroke-width: 1.8; fill: none; }
+    .sign-white-stroke { stroke: var(--sign-white); stroke-width: 1.8; fill: none; }
+    .sign-text-dark { fill: var(--on-surface); font-family: var(--font-label); font-size: 9px; font-weight: 800; }
+    .sign-text-white { fill: var(--sign-white); font-family: var(--font-label); font-size: 9px; font-weight: 800; }
+
+    /* Vehicles & Actors */
+    .car-ego-body { fill: var(--car-ego); stroke: var(--sign-white); stroke-width: 1.5; }
+    .car-ego-cabin { fill: var(--car-ego-roof); }
+    .car-other-body { fill: var(--car-other); stroke: var(--sign-white); stroke-width: 1.5; }
+    .car-other-cabin { fill: var(--car-other-roof); }
+    .car-cross-body { fill: var(--car-cross); stroke: var(--sign-white); stroke-width: 1.5; }
+    .car-cross-cabin { fill: var(--car-cross-roof); }
+
+    .flow-go { stroke: var(--priority-go); stroke-width: 3.5; fill: none; }
+    .flow-go-head { fill: var(--priority-go); }
+    .flow-yield { stroke: var(--priority-yield); stroke-width: 3; stroke-dasharray: 5 4; fill: none; }
+    .flow-stop { stroke: var(--priority-stop); stroke-width: 3.5; fill: none; }
+
+    .actor-tag-bg { fill: var(--background); stroke: var(--on-surface); stroke-width: 1.5; }
+    .actor-tag-go { fill: var(--positive); }
+    .actor-tag-yield { fill: var(--warning); }
+    .actor-tag-stop { fill: var(--error); }
+    .actor-tag-text-light { fill: var(--on-primary); font-family: var(--font-label); font-size: 9.5px; font-weight: 800; }
+    .actor-tag-text-dark { fill: var(--on-surface); font-family: var(--font-label); font-size: 9.5px; font-weight: 800; }
+
+    /* Simulated vehicle animations */
+    .sim-actor {
+      transition: transform var(--dur-long) var(--ease-in-out);
+    }
+    .is-hidden {
+      display: none;
+    }
+
+    /* Map Controls & Legend */
+    .map-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      gap: var(--space-sm);
+    }
+    .sim-status-banner {
+      border-left: var(--inset-rule);
+      background: var(--surface-container-low);
+      padding: var(--space-sm) var(--space-md);
+      font-size: var(--body-size);
+    }
+    .sim-status-banner--go {
+      border-left: var(--inset-rule-positive);
+      background: var(--positive-container);
+      color: var(--on-positive-container);
+    }
+    .sim-status-banner--yield {
+      border-left: var(--inset-rule-warning);
+      background: var(--warning-container);
+      color: var(--on-warning-container);
+    }
+
+    .map-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-md);
+      padding-top: var(--space-sm);
+      border-top: 1px solid var(--outline-variant);
+      font-size: var(--label-size);
+      color: var(--on-surface-variant);
+    }
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      font-weight: 600;
+    }
+    .legend-swatch {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+    }
+    .swatch-go { background: var(--priority-go); }
+    .swatch-yield { background: var(--priority-yield); }
+    .swatch-stop { background: var(--priority-stop); }
+    .swatch-ego { background: var(--car-ego); }
+
+    /* Buttons (Handbook grounded) */
+    .button {
+      font: 700 var(--body-size)/1.2 var(--font-label);
+      background: var(--primary);
+      color: var(--on-primary);
+      border: 0;
+      border-radius: var(--rounded);
+      padding: 0.75rem var(--space-md);
+      min-height: 44px;
+      box-shadow: var(--button-ground);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      transition: transform var(--dur-micro) var(--ease-out), background-color var(--dur-micro) var(--ease-out);
+    }
+    .button:hover {
+      background: var(--on-primary-container);
+    }
+    .button:active {
+      transform: translateY(2px);
+      box-shadow: none;
+    }
+    .button:focus-visible {
+      outline: var(--focus-ring);
+      outline-offset: 0;
+      box-shadow: var(--focus-bar);
+    }
+    .button--secondary {
+      background: var(--surface-container-low);
+      color: var(--on-surface);
+      border: 1px solid var(--outline-variant);
+      box-shadow: var(--button-ground-secondary);
+    }
+    .button--secondary:hover {
+      background: var(--surface-container);
+    }
+    .button--secondary.is-selected {
+      background: var(--primary-container);
+      color: var(--on-primary-container);
+      border-color: var(--tertiary);
+    }
+
+    /* Right Column: Dossier & Trap Check */
+    .detail-panel {
+      display: grid;
+      gap: var(--space-md);
+      border-top: 2px solid var(--outline);
+      padding-top: var(--space-md);
+    }
+    .detail-header {
+      display: grid;
+      gap: var(--space-xs);
+    }
+    .detail-title-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+    .detail-french {
+      font-size: var(--label-size);
+      font-weight: 700;
+      color: var(--tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    /* Key Figure Tiles */
+    .key-figures {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--space-sm);
+    }
+    .figure-tile {
+      border-left: var(--inset-rule);
+      background: var(--surface-container-low);
+      padding: var(--space-sm) var(--space-md);
+    }
+    .figure-label {
+      font-size: var(--label-size);
+      font-weight: 700;
+      color: var(--on-surface-variant);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .figure-value {
+      font-size: var(--headline-size);
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      color: var(--on-surface);
+      margin-top: var(--space-xs);
+    }
+    .figure-note {
+      font-size: var(--label-size);
+      color: var(--on-surface-variant);
+      margin-top: var(--space-xs);
+    }
+
+    /* Inset Rule Callout */
+    .inset-callout {
+      border-left: var(--inset-rule);
+      background: var(--surface-container-low);
+      padding: var(--space-md);
+      display: grid;
+      gap: var(--space-xs);
+    }
+    .inset-callout-title {
+      font-size: var(--label-size);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--tertiary);
+    }
+
+    /* Summary Fact List */
+    .summary-list {
+      border-top: 1px solid var(--outline-variant);
+      margin: 0;
+      padding: 0;
+    }
+    .summary-row {
+      display: grid;
+      grid-template-columns: minmax(110px, 0.42fr) minmax(0, 1fr);
+      gap: var(--space-sm);
+      padding: var(--space-sm) 0;
+      border-bottom: 1px solid var(--outline-variant);
+      align-items: start;
+    }
+    .summary-key {
+      font-weight: 700;
+      font-size: var(--body-size);
+      color: var(--on-surface);
+    }
+    .summary-val {
+      font-size: var(--body-size);
+      color: var(--on-surface);
+    }
+
+    /* Trap Check Quiz Box */
+    .quiz-box {
+      border: 2px solid var(--outline);
+      padding: var(--space-md);
+      background: var(--background);
+      display: grid;
+      gap: var(--space-md);
+    }
+    .quiz-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--space-xs);
+      border-bottom: 1px solid var(--outline-variant);
+      padding-bottom: var(--space-sm);
+    }
+    .quiz-question {
+      font-weight: 700;
+      font-size: var(--subhead-size);
+      line-height: 1.35;
+    }
+    .quiz-options {
+      display: grid;
+      gap: var(--space-sm);
+    }
+    .quiz-option {
+      width: 100%;
+      min-height: 44px;
+      text-align: left;
+      padding: var(--space-sm) var(--space-md);
+      background: var(--background);
+      color: var(--on-surface);
+      border: 2px solid var(--outline);
+      border-radius: var(--rounded);
+      font-family: inherit;
+      font-size: var(--body-size);
+      line-height: 1.4;
+      cursor: pointer;
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-sm);
+      transition: background-color var(--dur-micro) var(--ease-out);
+    }
+    .quiz-option:hover:not(:disabled) {
+      background: var(--surface-container-low);
+    }
+    .quiz-option:focus-visible {
+      outline: var(--focus-ring);
+      outline-offset: 0;
+      box-shadow: var(--focus-bar);
+    }
+    .quiz-option:disabled {
+      cursor: default;
+    }
+    .quiz-option.is-correct {
+      background: var(--positive-container);
+      border-color: var(--positive);
+      box-shadow: inset 5px 0 0 var(--positive);
+    }
+    .quiz-option.is-wrong {
+      background: var(--error-container);
+      border-color: var(--error);
+      box-shadow: inset 5px 0 0 var(--error);
+    }
+    .quiz-letter {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      flex-shrink: 0;
+      border: 2px solid var(--outline);
+      font-weight: 800;
+      font-size: var(--label-size);
+      margin-top: 1px;
+    }
+    .quiz-feedback {
+      padding: var(--space-sm) var(--space-md);
+      display: grid;
+      gap: var(--space-xs);
+    }
+    .quiz-feedback--pass {
+      border-left: var(--inset-rule-positive);
+      background: var(--positive-container);
+      color: var(--on-positive-container);
+    }
+    .quiz-feedback--fail {
+      border-left: var(--inset-rule-error);
+      background: var(--background);
+      color: var(--on-surface);
+    }
+    .quiz-feedback-head {
+      font-weight: 800;
+      font-size: var(--body-size);
+    }
+    .quiz-feedback--fail .quiz-feedback-head {
+      color: var(--error);
+    }
+    .quiz-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+      align-items: center;
+    }
+
+    /* Comparison Reference Matrix Section */
+    .reference-section {
+      border-top: 2px solid var(--outline);
+      padding-top: var(--space-lg);
+      display: grid;
+      gap: var(--space-md);
+    }
+    .table-wrap {
+      overflow-x: auto;
+    }
+    table.rules-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: var(--body-size);
+    }
+    table.rules-table th {
+      font-weight: 700;
+      padding: var(--space-sm) var(--space-md) var(--space-sm) 0;
+      border-bottom: 2px solid var(--outline);
+      white-space: nowrap;
+    }
+    table.rules-table td {
+      padding: var(--space-sm) var(--space-md) var(--space-sm) 0;
+      border-bottom: 1px solid var(--outline-variant);
+      vertical-align: top;
+    }
+    table.rules-table .num-col {
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .row-jump-btn {
+      background: transparent;
+      border: 0;
+      padding: 0;
+      font: 700 var(--body-size)/1.3 var(--font-body);
+      color: var(--tertiary);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      cursor: pointer;
+      text-align: left;
+    }
+    .row-jump-btn:hover {
+      text-decoration-thickness: 3px;
+    }
+    .row-jump-btn:focus-visible {
+      outline: none;
+      background: var(--focus-yellow);
+      color: var(--on-surface);
+      text-decoration: none;
+      box-shadow: var(--focus-underline);
+    }
+
+    /* ETG Exam Mechanics Strip */
+    .etg-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+      gap: var(--space-md);
+    }
+
+    /* Footer */
+    .page-footer {
+      border-top: 1px solid var(--outline-variant);
+      padding-top: var(--space-md);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--space-md);
+      font-size: var(--label-size);
+      color: var(--on-surface-variant);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 960px) {
+      .workspace-grid {
+        grid-template-columns: 1fr;
+      }
+      .zone-nav {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .page-grid {
+        padding: var(--space-md);
+        gap: var(--space-md);
+      }
+      .zone-nav {
+        grid-template-columns: 1fr;
+      }
+      .key-figures {
+        grid-template-columns: 1fr;
+      }
+      .summary-row {
+        grid-template-columns: 1fr;
+        gap: var(--space-xs);
+      }
+      .map-frame, .road-map-svg {
+        min-height: 300px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page-grid">
+    <div class="index-header">
+      <span>Code de la Route · ETG Priority &amp; Zone Map</span>
+      <div class="index-header-meta">
+        <span class="status-tag" id="mastery-tag">Mastered: 0 / 4 zones</span>
+        <span>Pass target: 35 / 40</span>
+      </div>
+    </div>
+
+    <header class="page-intro">
+      <h1>French Road-Scenario Priority Explorer</h1>
+      <p class="page-lede">
+        Select any of the four road zones on the district map to inspect French right-of-way rules, urban speed limits, road markings, live priority simulations, and instant ETG exam trap checks.
+      </p>
+    </header>
+
+    <nav class="zone-nav" aria-label="Road scenario zones">
+      <button type="button" class="zone-tab is-active" id="tab-zone-1" onclick="selectZone(1)">
+        <div class="zone-tab-top">
+          <span class="step-badge">1</span>
+          <span class="zone-tab-state" id="tab-state-1">Unchecked</span>
+        </div>
+        <span class="zone-tab-title">Priorité à droite</span>
+        <span class="zone-tab-sub">Unmarked intersection · 50 km/h</span>
+      </button>
+
+      <button type="button" class="zone-tab" id="tab-zone-2" onclick="selectZone(2)">
+        <div class="zone-tab-top">
+          <span class="step-badge">2</span>
+          <span class="zone-tab-state" id="tab-state-2">Unchecked</span>
+        </div>
+        <span class="zone-tab-title">Giratoire vs. Rond-point</span>
+        <span class="zone-tab-sub">Entry yield vs. right priority</span>
+      </button>
+
+      <button type="button" class="zone-tab" id="tab-zone-3" onclick="selectZone(3)">
+        <div class="zone-tab-top">
+          <span class="step-badge">3</span>
+          <span class="zone-tab-state" id="tab-state-3">Unchecked</span>
+        </div>
+        <span class="zone-tab-title">Cédez-le-passage</span>
+        <span class="zone-tab-sub">Yield dashed line vs. Stop</span>
+      </button>
+
+      <button type="button" class="zone-tab" id="tab-zone-4" onclick="selectZone(4)">
+        <div class="zone-tab-top">
+          <span class="step-badge">4</span>
+          <span class="zone-tab-state" id="tab-state-4">Unchecked</span>
+        </div>
+        <span class="zone-tab-title">Zone de rencontre</span>
+        <span class="zone-tab-sub">20 km/h · Pedestrians first</span>
+      </button>
+    </nav>
+
+    <section class="workspace-grid" aria-label="Interactive map and scenario rules">
+      <!-- LEFT COLUMN: Interactive Road Scenario Map -->
+      <div class="map-panel">
+        <div class="map-toolbar">
+          <div>
+            <div class="map-caption">Interactive District Road Map</div>
+            <h2 id="map-active-heading">Zone 1: Unmarked Intersection (No Signs)</h2>
+          </div>
+        </div>
+
+        <div class="map-frame">
+          <svg id="road-map-svg" class="road-map-svg" viewBox="0 0 760 560" role="img" aria-label="Interactive French road-scenario map with four clickable traffic zones">
+            <!-- District city blocks and parks -->
+            <rect x="0" y="0" width="760" height="560" fill="var(--map-ground)" />
+
+            <!-- ============================================================ -->
+            <!-- ZONE 1: PRIORITE A DROITE (Top-Left: 16..372, 16..272)       -->
+            <!-- ============================================================ -->
+            <g id="svg-zone-1" class="svg-zone is-active" tabindex="0" role="button" aria-label="Zone 1: Standard intersection with no signs, Priorité à droite" onclick="selectZone(1)" onkeydown="handleZoneKey(event, 1)">
+              <rect x="16" y="16" width="356" height="256" fill="var(--map-block)" />
+              <rect x="28" y="28" width="90" height="72" class="park-fill" />
+              <rect x="248" y="182" width="110" height="76" class="park-fill" />
+
+              <!-- Wide North-South Boulevard (no signs!) -->
+              <rect x="136" y="16" width="84" height="256" class="road-fill" />
+              <!-- Narrow East-West Side Street -->
+              <rect x="16" y="122" width="356" height="48" class="road-fill" />
+
+              <!-- Center dashed line on wide road stopping cleanly before intersection -->
+              <line x1="178" y1="22" x2="178" y2="112" class="marking-dash" />
+              <line x1="178" y1="180" x2="178" y2="266" class="marking-dash" />
+
+              <!-- Side curbs indicating no yield/stop markings -->
+              <line x1="136" y1="16" x2="136" y2="122" class="road-curb-stroke" />
+              <line x1="220" y1="16" x2="220" y2="122" class="road-curb-stroke" />
+              <line x1="136" y1="170" x2="136" y2="272" class="road-curb-stroke" />
+              <line x1="220" y1="170" x2="220" y2="272" class="road-curb-stroke" />
+
+              <!-- Priority & Yield Vector Overlays -->
+              <path id="z1-arrow-go" d="M 300 136 L 106 136" class="flow-go" />
+              <polygon points="98,136 112,129 112,143" class="flow-go-head" />
+              <path id="z1-arrow-yield" d="M 199 224 L 199 178" class="flow-yield" />
+              <line x1="183" y1="178" x2="215" y2="178" class="flow-stop" />
+
+              <!-- Car B (Narrow Road, coming from RIGHT -> Priority 1st) -->
+              <g id="z1-car-b" class="sim-actor" transform="translate(0, 0)">
+                <rect x="262" y="127" width="38" height="20" rx="3" class="car-other-body" />
+                <rect x="270" y="130" width="18" height="14" rx="2" class="car-other-cabin" />
+                <rect x="255" y="102" width="58" height="18" class="actor-tag-go" />
+                <text x="284" y="114" text-anchor="middle" class="actor-tag-text-light">B: 1ST</text>
+              </g>
+
+              <!-- Car A (YOU on Wide Boulevard -> Must Yield!) -->
+              <g id="z1-car-a" class="sim-actor" transform="translate(0, 0)">
+                <rect x="188" y="204" width="22" height="40" rx="3" class="car-ego-body" />
+                <rect x="191" y="213" width="16" height="19" rx="2" class="car-ego-cabin" />
+                <rect x="215" y="212" width="66" height="18" class="actor-tag-yield" />
+                <text x="248" y="224" text-anchor="middle" class="actor-tag-text-light">YOU: YIELD</text>
+              </g>
+
+              <!-- Width comparison callouts -->
+              <rect x="26" y="182" width="98" height="34" class="zone-badge-bg" />
+              <text x="33" y="196" class="zone-sub-label">NO SIGNS</text>
+              <text x="33" y="210" class="zone-sub-label">Narrow = Priority</text>
+
+              <!-- Zone Label Badge -->
+              <rect x="16" y="16" width="198" height="24" class="zone-pill-bg" />
+              <text x="24" y="32" class="zone-pill-text">1 · PRIORITÉ À DROITE</text>
+              <rect x="16" y="16" width="356" height="256" class="zone-hit-border" />
+            </g>
+
+            <!-- ============================================================ -->
+            <!-- ZONE 2: GIRATOIRE VS ROND-POINT (Top-Right: 388..744, 16..272)-->
+            <!-- ============================================================ -->
+            <g id="svg-zone-2" class="svg-zone" tabindex="0" role="button" aria-label="Zone 2: Carrefour à sens giratoire versus Traditional Rond-point" onclick="selectZone(2)" onkeydown="handleZoneKey(event, 2)">
+              <rect x="388" y="16" width="356" height="256" fill="var(--map-block)" />
+
+              <!-- 4 Approach Roads -->
+              <rect x="536" y="16" width="60" height="256" class="road-fill" />
+              <rect x="388" y="114" width="356" height="60" class="road-fill" />
+
+              <!-- Outer Circle Roadway -->
+              <circle cx="566" cy="144" r="76" class="road-fill" />
+              <!-- Central Island -->
+              <circle cx="566" cy="144" r="34" class="park-fill" stroke="var(--road-curb)" stroke-width="3" />
+              <!-- Counter-clockwise ring lane guide -->
+              <circle cx="566" cy="144" r="55" class="marking-dash" />
+
+              <!-- LAYER A: Carrefour à sens giratoire (Yield at entry!) -->
+              <g id="z2-layer-giratoire">
+                <!-- White dashed yield lines at entries -->
+                <line x1="566" y1="224" x2="596" y2="224" class="marking-yield-dash" />
+                <line x1="486" y1="144" x2="486" y2="174" class="marking-yield-dash" />
+                <line x1="646" y1="114" x2="646" y2="144" class="marking-yield-dash" />
+                <line x1="536" y1="64" x2="566" y2="64" class="marking-yield-dash" />
+
+                <!-- French Yield Sign (AB3a) at South entry -->
+                <line x1="608" y1="226" x2="608" y2="246" class="sign-pole" />
+                <polygon points="598,214 618,214 608,231" class="sign-white sign-red-stroke" />
+
+                <!-- Giratoire circular blue sign (AB25 / B21) -->
+                <circle cx="444" cy="222" r="14" class="sign-blue-fill" />
+                <path d="M 438 222 A 6 6 0 1 1 446 228" class="sign-white-stroke" />
+                <polygon points="444,230 449,225 448,231" fill="var(--sign-white)" />
+
+                <!-- Priority arc inside circle -->
+                <path d="M 526 178 A 55 55 0 0 0 606 184" class="flow-go" />
+                <polygon points="613,178 600,181 607,191" class="flow-go-head" />
+
+                <!-- South entry yield marker -->
+                <line x1="569" y1="228" x2="594" y2="228" class="flow-stop" />
+
+                <!-- Car C inside ring (GO 1st) -->
+                <g id="z2-gir-car-c" class="sim-actor" transform="translate(0,0)">
+                  <rect x="526" y="176" width="34" height="18" rx="3" transform="rotate(34 543 185)" class="car-cross-body" />
+                  <rect x="492" y="196" width="58" height="18" class="actor-tag-go" />
+                  <text x="521" y="208" text-anchor="middle" class="actor-tag-text-light">IN: 1ST</text>
+                </g>
+
+                <!-- Car A entering from South (YIELD) -->
+                <g id="z2-gir-car-a" class="sim-actor" transform="translate(0,0)">
+                  <rect x="572" y="232" width="18" height="34" rx="3" class="car-ego-body" />
+                  <rect x="575" y="240" width="12" height="16" rx="2" class="car-ego-cabin" />
+                  <rect x="615" y="236" width="76" height="18" class="actor-tag-yield" />
+                  <text x="653" y="248" text-anchor="middle" class="actor-tag-text-light">ENTRY: YIELD</text>
+                </g>
+              </g>
+
+              <!-- LAYER B: Traditional Rond-point (Place de l'Etoile - Priorite a droite!) -->
+              <g id="z2-layer-rondpoint" class="is-hidden">
+                <!-- NO yield lines at entries, NO yield sign! -->
+                <rect x="400" y="206" width="124" height="32" class="zone-badge-bg" />
+                <text x="406" y="220" class="zone-sub-label">NO ENTRY SIGNS</text>
+                <text x="406" y="233" class="zone-sub-label">Priorité à droite</text>
+
+                <!-- Priority arrow for entering car -->
+                <path d="M 581 262 L 581 196" class="flow-go" />
+                <polygon points="581,188 574,202 588,202" class="flow-go-head" />
+                <!-- Yield bar for circulating car inside ring -->
+                <path d="M 526 176 A 55 55 0 0 0 546 193" class="flow-yield" />
+
+                <!-- Car C inside ring (MUST YIELD to right!) -->
+                <g id="z2-rp-car-c" class="sim-actor" transform="translate(0,0)">
+                  <rect x="514" y="164" width="34" height="18" rx="3" transform="rotate(42 531 173)" class="car-cross-body" />
+                  <rect x="462" y="150" width="66" height="18" class="actor-tag-yield" />
+                  <text x="495" y="162" text-anchor="middle" class="actor-tag-text-light">IN: YIELD</text>
+                </g>
+
+                <!-- Car A entering from South (GO 1st from right!) -->
+                <g id="z2-rp-car-a" class="sim-actor" transform="translate(0,0)">
+                  <rect x="572" y="224" width="18" height="34" rx="3" class="car-ego-body" />
+                  <rect x="575" y="232" width="12" height="16" rx="2" class="car-ego-cabin" />
+                  <rect x="602" y="228" width="84" height="18" class="actor-tag-go" />
+                  <text x="644" y="240" text-anchor="middle" class="actor-tag-text-light">ENTRY: 1ST</text>
+                </g>
+              </g>
+
+              <!-- Zone Label Badge -->
+              <rect x="388" y="16" width="234" height="24" class="zone-pill-bg" />
+              <text id="z2-svg-title" x="396" y="32" class="zone-pill-text">2 · CARREFOUR À SENS GIRATOIRE</text>
+              <rect x="388" y="16" width="356" height="256" class="zone-hit-border" />
+            </g>
+
+            <!-- ============================================================ -->
+            <!-- ZONE 3: CEDEZ-LE-PASSAGE (Bottom-Left: 16..372, 288..544)    -->
+            <!-- ============================================================ -->
+            <g id="svg-zone-3" class="svg-zone" tabindex="0" role="button" aria-label="Zone 3: Cédez-le-passage Yield Zone versus Stop" onclick="selectZone(3)" onkeydown="handleZoneKey(event, 3)">
+              <rect x="16" y="288" width="356" height="256" fill="var(--map-block)" />
+
+              <!-- Priority Horizontal Road (East-West) -->
+              <rect x="16" y="326" width="356" height="72" class="road-fill" />
+              <line x1="22" y1="362" x2="366" y2="362" class="marking-dash" />
+
+              <!-- Minor Yielding Road joining from South -->
+              <rect x="162" y="398" width="64" height="146" class="road-fill" />
+              <line x1="194" y1="414" x2="194" y2="538" class="marking-dash" />
+
+              <!-- Thick Dashed Yield Line (Ligne de Cédez-le-passage) -->
+              <line x1="194" y1="402" x2="226" y2="402" class="marking-yield-dash" />
+
+              <!-- French Yield Sign (AB3a) -->
+              <line x1="238" y1="412" x2="238" y2="440" class="sign-pole" />
+              <polygon points="225,394 251,394 238,417" class="sign-white sign-red-stroke" />
+
+              <!-- Cross-traffic priority arrow -->
+              <path id="z3-cross-flow" d="M 60 380 L 320 380" class="flow-go" />
+              <polygon id="z3-cross-head" points="330,380 316,373 316,387" class="flow-go-head" />
+
+              <!-- Ego Car A yield/proceed arrow -->
+              <path id="z3-ego-arrow" d="M 210 470 L 210 412" class="flow-yield" />
+
+              <!-- Cross-Traffic Car C -->
+              <g id="z3-car-c" class="sim-actor" transform="translate(0,0)">
+                <rect x="74" y="370" width="40" height="20" rx="3" class="car-cross-body" />
+                <rect x="88" y="373" width="18" height="14" rx="2" class="car-cross-cabin" />
+                <rect x="58" y="344" width="76" height="18" class="actor-tag-go" />
+                <text x="96" y="356" text-anchor="middle" class="actor-tag-text-light">CROSS: 1ST</text>
+              </g>
+
+              <!-- Ego Car A at Yield Line -->
+              <g id="z3-car-a" class="sim-actor" transform="translate(0,0)">
+                <rect x="199" y="458" width="22" height="40" rx="3" class="car-ego-body" />
+                <rect x="202" y="466" width="16" height="19" rx="2" class="car-ego-cabin" />
+                <rect id="z3-ego-tag-bg" x="226" y="468" width="84" height="18" class="actor-tag-yield" />
+                <text id="z3-ego-tag-text" x="268" y="480" text-anchor="middle" class="actor-tag-text-light">YIELD IF BUSY</text>
+              </g>
+
+              <!-- Mini Comparison Inset: Dashed Yield vs Solid Stop -->
+              <rect x="26" y="446" width="126" height="86" class="zone-badge-bg" />
+              <text x="34" y="462" class="zone-sub-label">LINE COMPARISON</text>
+              <line x1="34" y1="478" x2="88" y2="478" stroke="var(--road-asphalt)" stroke-width="6" />
+              <line x1="34" y1="478" x2="88" y2="478" stroke="var(--road-marking)" stroke-width="3" stroke-dasharray="6 4" />
+              <text x="94" y="482" class="zone-sub-label">Yield</text>
+              <line x1="34" y1="504" x2="88" y2="504" stroke="var(--road-asphalt)" stroke-width="6" />
+              <line x1="34" y1="504" x2="88" y2="504" stroke="var(--road-marking)" stroke-width="3.5" />
+              <text x="94" y="508" class="zone-sub-label">Stop</text>
+              <text x="34" y="525" class="sign-text-dark">Solid = Full stop always</text>
+
+              <!-- Zone Label Badge -->
+              <rect x="16" y="288" width="186" height="24" class="zone-pill-bg" />
+              <text x="24" y="304" class="zone-pill-text">3 · CÉDEZ-LE-PASSAGE</text>
+              <rect x="16" y="288" width="356" height="256" class="zone-hit-border" />
+            </g>
+
+            <!-- ============================================================ -->
+            <!-- ZONE 4: ZONE DE RENCONTRE (Bottom-Right: 388..744, 288..544) -->
+            <!-- ============================================================ -->
+            <g id="svg-zone-4" class="svg-zone" tabindex="0" role="button" aria-label="Zone 4: Zone de rencontre Meeting Zone, 20 km/h and pedestrian priority" onclick="selectZone(4)" onkeydown="handleZoneKey(event, 4)">
+              <rect x="388" y="288" width="356" height="256" fill="var(--map-block)" />
+
+              <!-- Shared-surface paved street (flush level) -->
+              <rect x="388" y="352" width="356" height="128" class="shared-fill" />
+              <line x1="388" y1="352" x2="744" y2="352" stroke="var(--outline-variant)" stroke-width="2" />
+              <line x1="388" y1="480" x2="744" y2="480" stroke="var(--outline-variant)" stroke-width="2" />
+
+              <!-- Marked Parking Bay (Only legal parking spot!) -->
+              <rect x="614" y="446" width="74" height="28" fill="none" stroke="var(--on-surface)" stroke-width="1.5" stroke-dasharray="4 3" />
+              <text x="651" y="464" text-anchor="middle" class="sign-text-dark">MARKED P</text>
+
+              <!-- B52 Zone de rencontre Sign -->
+              <rect x="404" y="300" width="54" height="46" class="sign-blue-fill" stroke="var(--sign-white)" stroke-width="2" />
+              <circle cx="442" cy="316" r="10" class="sign-white" />
+              <text x="442" y="319" text-anchor="middle" class="sign-text-dark">20</text>
+              <circle cx="418" cy="314" r="3" fill="var(--sign-white)" />
+              <line x1="418" y1="317" x2="418" y2="328" class="sign-white-stroke" />
+              <text x="431" y="340" text-anchor="middle" class="sign-text-white">ZONE 20</text>
+
+              <!-- Contraflow Cyclist Direction Guide -->
+              <path d="M 698 374 L 460 374" stroke="var(--tertiary)" stroke-width="2.5" stroke-dasharray="6 4" fill="none" />
+              <polygon points="452,374 464,368 464,380" fill="var(--tertiary)" />
+              <rect x="526" y="357" width="136" height="15" class="zone-badge-bg" />
+              <text x="594" y="368" text-anchor="middle" class="sign-text-dark">2-WAY CYCLING OK</text>
+
+              <!-- Contraflow Cyclist -->
+              <g id="z4-cyclist" class="sim-actor" transform="translate(0,0)">
+                <circle cx="672" cy="374" r="5" fill="none" stroke="var(--tertiary)" stroke-width="2.2" />
+                <circle cx="690" cy="374" r="5" fill="none" stroke="var(--tertiary)" stroke-width="2.2" />
+                <line x1="672" y1="374" x2="681" y2="368" stroke="var(--tertiary)" stroke-width="2.2" />
+                <line x1="681" y1="368" x2="690" y2="374" stroke="var(--tertiary)" stroke-width="2.2" />
+                <circle cx="681" cy="361" r="3" fill="var(--tertiary)" />
+              </g>
+
+              <!-- Pedestrian walking on roadway (1st Priority!) -->
+              <g id="z4-pedestrian" class="sim-actor" transform="translate(0,0)">
+                <circle cx="566" cy="416" r="14" fill="var(--positive-container)" stroke="var(--positive)" stroke-width="2" />
+                <circle cx="566" cy="410" r="3.5" fill="var(--on-surface)" />
+                <line x1="566" y1="414" x2="566" y2="424" stroke="var(--on-surface)" stroke-width="2.2" />
+                <rect x="526" y="434" width="84" height="18" class="actor-tag-go" />
+                <text x="568" y="446" text-anchor="middle" class="actor-tag-text-light">PED: 1ST</text>
+              </g>
+
+              <!-- Ego Car A moving slowly Eastbound at <= 20 km/h -->
+              <g id="z4-car-a" class="sim-actor" transform="translate(0,0)">
+                <rect x="434" y="405" width="42" height="22" rx="3" class="car-ego-body" />
+                <rect x="450" y="408" width="18" height="16" rx="2" class="car-ego-cabin" />
+                <rect x="412" y="434" width="86" height="18" class="actor-tag-yield" />
+                <text x="455" y="446" text-anchor="middle" class="actor-tag-text-light">MAX 20 KM/H</text>
+              </g>
+
+              <!-- Speed & Priority Pill -->
+              <rect x="520" y="298" width="212" height="44" class="zone-badge-bg" />
+              <text x="528" y="315" class="zone-sub-label">PEDESTRIANS ON ROAD = 1ST</text>
+              <text x="528" y="331" class="zone-sub-label">Cars yield · Never loiter/park</text>
+
+              <!-- Zone Label Badge -->
+              <rect x="388" y="288" width="188" height="24" class="zone-pill-bg" />
+              <text x="396" y="304" class="zone-pill-text">4 · ZONE DE RENCONTRE</text>
+              <rect x="388" y="288" width="356" height="256" class="zone-hit-border" />
+            </g>
+          </svg>
+        </div>
+
+        <!-- Interactive Map Controls -->
+        <div class="map-controls">
+          <button type="button" class="button" id="btn-simulate" onclick="runSimulation()">
+            Animate Right-of-Way Sequence
+          </button>
+
+          <!-- Zone 2 Mode Toggle -->
+          <div id="ctrl-zone-2" class="is-hidden" style="display: flex; flex-wrap: wrap; gap: var(--space-xs);">
+            <button type="button" class="button button--secondary is-selected" id="btn-z2-giratoire" onclick="setZone2Mode('giratoire')">
+              Carrefour à sens giratoire
+            </button>
+            <button type="button" class="button button--secondary" id="btn-z2-rondpoint" onclick="setZone2Mode('rondpoint')">
+              Rond-point (Étoile style)
+            </button>
+          </div>
+
+          <!-- Zone 3 Mode Toggle -->
+          <div id="ctrl-zone-3" class="is-hidden" style="display: flex; flex-wrap: wrap; gap: var(--space-xs);">
+            <button type="button" class="button button--secondary is-selected" id="btn-z3-busy" onclick="setZone3Mode('busy')">
+              Cross-traffic approaching
+            </button>
+            <button type="button" class="button button--secondary" id="btn-z3-clear" onclick="setZone3Mode('clear')">
+              Cross-road completely clear
+            </button>
+          </div>
+        </div>
+
+        <div id="sim-status" class="sim-status-banner" role="status" aria-live="polite">
+          Click "Animate Right-of-Way Sequence" to watch who moves first in Zone 1.
+        </div>
+
+        <div class="map-legend" aria-label="Map symbol key">
+          <span class="legend-item"><span class="legend-swatch swatch-ego"></span> Your vehicle (Blue)</span>
+          <span class="legend-item"><span class="legend-swatch swatch-go"></span> Has priority (Passes 1st)</span>
+          <span class="legend-item"><span class="legend-swatch swatch-yield"></span> Must yield / slow down</span>
+          <span class="legend-item"><span class="legend-swatch swatch-stop"></span> Yield bar / full-stop conflict</span>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: Priority Rules, Metrics & Instant Trap Check -->
+      <aside class="detail-panel" aria-label="Selected zone rules and quiz">
+        <div class="detail-header">
+          <div class="detail-title-row">
+            <span class="step-badge" id="detail-badge">1</span>
+            <h2 id="detail-title">Standard Intersection (No Signs)</h2>
+          </div>
+          <div class="detail-french" id="detail-french">Priorité à droite · Code de la route Art. R415-5</div>
+        </div>
+
+        <div class="key-figures">
+          <div class="figure-tile">
+            <div class="figure-label">Urban Speed Limit</div>
+            <div class="figure-value" id="detail-speed">50 km/h</div>
+            <div class="figure-note" id="detail-speed-note">Default in agglomération (Art. R413-3)</div>
+          </div>
+          <div class="figure-tile">
+            <div class="figure-label">Failure to Yield Penalty</div>
+            <div class="figure-value" id="detail-penalty">−4 pts</div>
+            <div class="figure-note" id="detail-penalty-note">4th-class fine · possible suspension</div>
+          </div>
+        </div>
+
+        <div class="inset-callout">
+          <div class="inset-callout-title">Rule to Lock In</div>
+          <p id="detail-rule">
+            Never assume a wider or busier street has priority: with no overriding sign or road marking, traffic entering from your right goes first.
+          </p>
+        </div>
+
+        <dl class="summary-list" id="detail-summary">
+          <!-- Populated dynamically per zone -->
+        </dl>
+
+        <!-- Instant 1-Question Trap Check -->
+        <div class="quiz-box" id="quiz-box">
+          <div class="quiz-header">
+            <span class="status-tag" id="quiz-status-tag">ETG Trap Check</span>
+            <span class="zone-tab-sub" id="quiz-meta">1 question · Zero partial credit</span>
+          </div>
+
+          <div class="quiz-question" id="quiz-question"></div>
+
+          <div class="quiz-options" id="quiz-options" role="group" aria-label="Answer choices"></div>
+
+          <div id="quiz-feedback" class="quiz-feedback is-hidden" role="status" aria-live="polite">
+            <div class="quiz-feedback-head" id="quiz-feedback-head"></div>
+            <p id="quiz-feedback-body"></p>
+          </div>
+
+          <div class="quiz-actions">
+            <button type="button" class="button button--secondary is-hidden" id="btn-retry-quiz" onclick="retryCurrentQuiz()">
+              Try Question Again
+            </button>
+            <button type="button" class="button button--secondary" id="btn-next-zone" onclick="goNextZone()">
+              Next Zone →
+            </button>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <!-- Bottom Reference Comparison Table & ETG Exam Mechanics -->
+    <section class="reference-section" aria-label="Zone comparison reference and ETG exam rules">
+      <div>
+        <h2>Quick Priority &amp; Speed Reference</h2>
+        <p class="page-lede" style="margin-top: var(--space-xs);">
+          Compare all four road scenarios side by side. Select any scenario name to highlight it on the map above.
+        </p>
+      </div>
+
+      <div class="table-wrap">
+        <table class="rules-table">
+          <thead>
+            <tr>
+              <th>Scenario</th>
+              <th>Signage / Markings</th>
+              <th>Speed Limit</th>
+              <th>Who Has Priority</th>
+              <th>Must You Stop?</th>
+              <th>Points</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><button type="button" class="row-jump-btn" onclick="selectZone(1)">1. Priorité à droite</button></td>
+              <td>No yield/stop signs or markings (or X-cross danger triangle)</td>
+              <td class="num-col">50 km/h</td>
+              <td>Vehicles approaching from the right, regardless of road width</td>
+              <td>Only to yield to a vehicle from the right</td>
+              <td class="num-col">−4 pts</td>
+            </tr>
+            <tr>
+              <td><button type="button" class="row-jump-btn" onclick="selectZone(2)">2a. Carrefour à sens giratoire</button></td>
+              <td>Circular blue arrows + <em>Cédez le passage</em> &amp; dashed entry line</td>
+              <td class="num-col">50 km/h</td>
+              <td>Vehicles already circulating inside the ring</td>
+              <td>Only if circulating traffic requires yielding</td>
+              <td class="num-col">−4 pts</td>
+            </tr>
+            <tr>
+              <td><button type="button" class="row-jump-btn" onclick="selectZone(2); setZone2Mode('rondpoint')">2b. Rond-point (Étoile)</button></td>
+              <td>Circular plaza with NO entry yield signs or dashed lines</td>
+              <td class="num-col">50 km/h</td>
+              <td>Vehicles entering from the right (<em>Priorité à droite</em>)</td>
+              <td>Vehicles inside must stop to yield to entries</td>
+              <td class="num-col">−4 pts</td>
+            </tr>
+            <tr>
+              <td><button type="button" class="row-jump-btn" onclick="selectZone(3)">3. Cédez-le-passage vs. Stop</button></td>
+              <td>Red-white inverted triangle + thick dashed line (vs. solid Stop line)</td>
+              <td class="num-col">50 km/h</td>
+              <td>Cross-traffic on the priority road (including cycle lanes)</td>
+              <td>Yield: only if traffic comes · Stop: mandatory full stop always</td>
+              <td class="num-col">−4 pts</td>
+            </tr>
+            <tr>
+              <td><button type="button" class="row-jump-btn" onclick="selectZone(4)">4. Zone de rencontre</button></td>
+              <td>Blue rectangular B52 sign showing 20 + pedestrian + cycle + car</td>
+              <td class="num-col">20 km/h</td>
+              <td>Pedestrians everywhere on the roadway; two-way cycling allowed</td>
+              <td>Yes, whenever needed to yield to pedestrians</td>
+              <td class="num-col">−6 pts</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="etg-strip">
+        <div class="inset-callout">
+          <div class="inset-callout-title">ETG Scoring &amp; Timer</div>
+          <p>40 questions, 20 seconds each, minimum <strong>35 / 40</strong> to pass. Each question has 1 to 4 correct answers—missing one or checking one wrong option gives <strong>0 points</strong>.</p>
+        </div>
+        <div class="inset-callout">
+          <div class="inset-callout-title">Visibility Speed Cap</div>
+          <p>Even where 50, 80, 110, or 130 km/h normally applies, speed is capped at <strong>50 km/h</strong> on all roads when visibility drops under 50 meters (Art. R413-4).</p>
+        </div>
+        <div class="inset-callout">
+          <div class="inset-callout-title">Absolute-Word Traps</div>
+          <p>Watch for <em>toujours</em> (always), <em>jamais</em> (never), <em>seulement</em>, and <em>uniquement</em>—they often signal an exception you must verify first.</p>
+        </div>
+      </div>
+    </section>
+
+    <footer class="page-footer">
+      <span>Sources: French Code de la route (Art. R110-2, R411-3-1, R412-9, R413-3, R413-4, R415-5 to R415-11, R417-10) &amp; ETG Study Notes.</span>
+      <button type="button" class="button button--secondary" id="btn-reset-progress" onclick="handleResetProgress(this)">
+        Reset Mastery Progress
+      </button>
+    </footer>
+  </main>
+
+  <api-shim></api-shim>
+  <script>
+    const ZONES = {
+      1: {
+        id: 1,
+        title: `Standard Intersection (No Signs)`,
+        mapHeading: `Zone 1: Unmarked Intersection (Priorité à droite)`,
+        french: `Priorité à droite · Code de la route Art. R415-5 & R413-3`,
+        speed: `50 km/h`,
+        speedNote: `Default urban limit in agglomération (20/30 in special zones)`,
+        penalty: `−4 pts`,
+        penaltyNote: `4th-class fine · up to 3-year license suspension`,
+        rule: `Never assume a wider or busier road has priority: with no overriding sign or pavement marking, vehicles approaching from your right always have right-of-way.`,
+        summary: [
+          { key: `Who goes 1st`, val: `Car B emerging from the narrow side street on your right.` },
+          { key: `Your action`, val: `Moderate your speed approaching the junction (Art. R415-1), look right, and yield to Car B.` },
+          { key: `Signs & markings`, val: `None—or a triangular danger sign with an X cross. Center dashed lines alone do NOT grant priority.` },
+          { key: `Common trap`, val: `Drivers assume the wider two-lane boulevard automatically overrides a narrow street. Without a priority sign or Stop/Yield line, it does not.` }
+        ],
+        quiz: {
+          question: `You are driving at 50 km/h on a wide urban boulevard with a dashed center line. Ahead, a narrow single-lane residential street enters from your right with NO signs and NO road markings. Who has priority?`,
+          options: [
+            { id: `a`, text: `You do, because you are on the wider main boulevard with a center line.` },
+            { id: `b`, text: `The vehicle coming from the narrow street on your right (Priorité à droite).` },
+            { id: `c`, text: `Whichever vehicle arrives at the intersection faster without braking.` },
+            { id: `d`, text: `Neither—both drivers must always come to a complete stop first.` }
+          ],
+          correctId: `b`,
+          passMsg: `Correct! Road width and dashed center lines never cancel Priorité à droite. Only an explicit priority sign, Stop, Cédez-le-passage, traffic light, or officer overrides it.`,
+          failMsg: `Trap triggered! Under Art. R415-5, road width does not grant priority. Because there is no sign or yield marking on the side street, the vehicle coming from your right has priority.`
+        }
+      },
+      2: {
+        id: 2,
+        title: `Roundabout vs. Traditional Circle`,
+        mapHeading: `Zone 2: Carrefour à sens giratoire vs. Rond-point`,
+        french: `Carrefour à sens giratoire (Art. R415-10) vs. Rond-point (Art. R415-5)`,
+        speed: `50 km/h`,
+        speedNote: `Default urban limit; adapt speed inside the curve`,
+        penalty: `−4 pts`,
+        penaltyNote: `4th-class fine · up to 3-year license suspension`,
+        rule: `Read the entry signage every time: a Carrefour à sens giratoire has Cédez-le-passage at entry (circulating cars go 1st), whereas an unsigned Rond-point gives priority to cars entering from the right.`,
+        summary: [
+          { key: `Sens giratoire`, val: `Has Cédez-le-passage triangles and dashed yield lines at entry—drivers entering MUST yield to traffic already on the ring (Art. R415-10).` },
+          { key: `Rond-point`, val: `Traditional circle (like Place de l'Étoile in Paris) with NO entry yield signs—Priorité à droite applies, so traffic inside yields to entering cars on the right.` },
+          { key: `Lane position`, val: `Stay near the right edge for straight/right exits; hug the inner left lane only if exiting to the left, signaling every lane change (Art. R412-9).` },
+          { key: `Common trap`, val: `Assuming every circular plaza in France works like a modern yield roundabout. Always check for the dashed yield line and triangle.` }
+        ],
+        quiz: {
+          question: `You are already circulating inside a traditional Place de l'Étoile-style rond-point in France. There are NO Cédez-le-passage signs and NO dashed yield lines at the incoming avenues. A car approaches from an avenue on your right. Who has priority?`,
+          options: [
+            { id: `a`, text: `You do, because vehicles already inside any circular intersection always have priority.` },
+            { id: `b`, text: `The vehicle entering from the right, because no entry yield sign overrides Priorité à droite.` },
+            { id: `c`, text: `Only buses and taxis entering from the right; private cars must always yield.` },
+            { id: `d`, text: `You do, provided you stay in the outermost lane with your left indicator on.` }
+          ],
+          correctId: `b`,
+          passMsg: `Exact! Without Cédez-le-passage signs or dashed lines at entry, a traditional rond-point follows Priorité à droite: cars inside the ring must yield to vehicles entering from the right.`,
+          failMsg: `Watch out for the "always" trap! Only a Carrefour à sens giratoire (Art. R415-10) gives priority to circulating traffic. On a traditional Place de l'Étoile-style rond-point with no entry signs, entering traffic from the right has priority.`
+        }
+      },
+      3: {
+        id: 3,
+        title: `Yield Zone (Cédez-le-passage)`,
+        mapHeading: `Zone 3: Yield Sign & Dashed Line (Cédez-le-passage)`,
+        french: `Cédez-le-passage (Art. R415-7) vs. Stop (Art. R415-6)`,
+        speed: `50 km/h`,
+        speedNote: `Slow down on approach; merge only when safe`,
+        penalty: `−4 pts`,
+        penaltyNote: `4th-class fine · applies to failing to yield to bikes too`,
+        rule: `At a Cédez-le-passage (inverted triangle + thick dashed line), you do NOT have to make a full dead stop if cross-traffic and cycle tracks are completely clear—unlike a Stop sign.`,
+        summary: [
+          { key: `Who goes 1st`, val: `All vehicles on the priority cross-road—including cyclists on parallel cycle tracks (Art. R415-14).` },
+          { key: `Yield vs. Stop`, val: `Cédez-le-passage uses a thick dashed line: slow down and stop only if needed. Stop uses a solid line (ligne d'arrêt): mandatory full stop even if the road is empty.` },
+          { key: `Cyclist exception`, val: `A small yellow-red "Cédez-le-passage cycliste" sign under a red light lets cyclists turn/go in the arrow direction only if clear and safe for pedestrians.` },
+          { key: `Common trap`, val: `Treating a Cédez-le-passage as requiring an automatic full stop on an empty road—or rolling past a Stop line when no cars are visible.` }
+        ],
+        quiz: {
+          question: `You approach an intersection controlled by an inverted red-and-white triangle (Cédez-le-passage) and a thick dashed white line. Visibility is wide open and no vehicles, cyclists, or pedestrians are approaching from either side. What is required?`,
+          options: [
+            { id: `a`, text: `You must come to a complete standstill with wheels stopped at the dashed line.` },
+            { id: `b`, text: `Slow down, verify the cross-road and cycle paths are clear, and proceed without a full stop.` },
+            { id: `c`, text: `Accelerate before cross-traffic arrives; the dashed line gives you merging priority.` },
+            { id: `d`, text: `Stop for at least 3 seconds only if you are turning left.` }
+          ],
+          correctId: `b`,
+          passMsg: `Spot on! Unlike a Stop sign (Art. R415-6), which requires a complete stop even on an empty road, Cédez-le-passage (Art. R415-7) requires you to slow down and yield—you only stop if traffic is present.`,
+          failMsg: `Classic Stop vs. Yield confusion! A full mandatory standstill applies to a Stop sign (solid ligne d'arrêt). At a Cédez-le-passage (dashed line), if the way is completely clear, you slow down, check carefully, and continue without stopping.`
+        }
+      },
+      4: {
+        id: 4,
+        title: `Meeting Zone (Zone de rencontre)`,
+        mapHeading: `Zone 4: Shared Street (Zone de rencontre)`,
+        french: `Zone de rencontre · Code de la route Art. R110-2, R411-3-1 & R415-11`,
+        speed: `20 km/h`,
+        speedNote: `Max 20 km/h (vs. 30 km/h in Zone 30)`,
+        penalty: `−6 pts`,
+        penaltyNote: `Failing to yield to a pedestrian = −6 points (Art. R415-11)`,
+        rule: `In a Zone de rencontre, vehicles are capped at 20 km/h, pedestrians can walk anywhere on the roadway with absolute priority over cars, and cyclists can ride two-way.`,
+        summary: [
+          { key: `Speed limit`, val: `20 km/h maximum (even stricter than a Zone 30's 30 km/h).` },
+          { key: `Pedestrians`, val: `Allowed to walk on the roadway itself (without loitering/standing stationary) and hold priority over all motor vehicles (except trams).` },
+          { key: `Two-way bikes`, val: `All streets in a Zone de rencontre are two-way (double sens) for cyclists, light cycle-mobiles, and EDPM scooters unless signed otherwise.` },
+          { key: `Parking rule`, val: `Stopping/parking outside marked bays is prohibited and fined as obstructive parking (stationnement gênant, Art. R417-10).` }
+        ],
+        quiz: {
+          question: `Entering a blue-signed Zone de rencontre on a one-way street for cars, you see a pedestrian walking down the middle of the lane and a cyclist riding toward you against traffic. Which statement is true?`,
+          options: [
+            { id: `a`, text: `Max speed is 30 km/h, and the pedestrian must step onto the sidewalk because cars have priority.` },
+            { id: `b`, text: `Max speed is 20 km/h, the pedestrian has priority on the roadway, and two-way cycling is permitted.` },
+            { id: `c`, text: `Max speed is 20 km/h, but the cyclist is committing a wrong-way offense unless a green light appears.` },
+            { id: `d`, text: `Pedestrians only have priority at painted zebra crossings inside a Zone de rencontre.` }
+          ],
+          correctId: `b`,
+          passMsg: `Well done! A Zone de rencontre caps speed at 20 km/h, gives pedestrians priority across the entire roadway (not just crosswalks), and makes streets two-way for cyclists by default (Art. R110-2).`,
+          failMsg: `Careful with the Zone 30 vs. Zone de rencontre trap! Zone de rencontre is 20 km/h (not 30), pedestrians may walk on the roadway with priority everywhere, and cycling is two-way by default.`
+        }
+      }
+    };
+
+    const appState = {
+      activeZone: 1,
+      zone2Mode: 'giratoire',
+      zone3Mode: 'busy',
+      quizResults: { 1: null, 2: null, 3: null, 4: null },
+      selectedOptions: { 1: null, 2: null, 3: null, 4: null }
+    };
+
+    let simTimeoutId = null;
+
+    async function persistState() {
+      if (window.notebookAppApi && typeof window.notebookAppApi.setAppState === 'function') {
+        try {
+          await window.notebookAppApi.setAppState({
+            activeZone: appState.activeZone,
+            zone2Mode: appState.zone2Mode,
+            zone3Mode: appState.zone3Mode,
+            quizResults: appState.quizResults,
+            selectedOptions: appState.selectedOptions
+          });
+        } catch (err) {
+          // Ignore persistence errors safely in non-host previews
+        }
+      }
+    }
+
+    function clearSimAnimations() {
+      if (simTimeoutId !== null) {
+        clearTimeout(simTimeoutId);
+        simTimeoutId = null;
+      }
+      const actors = [
+        'z1-car-a', 'z1-car-b',
+        'z2-gir-car-c', 'z2-gir-car-a',
+        'z2-rp-car-c', 'z2-rp-car-a',
+        'z3-car-c', 'z3-car-a',
+        'z4-car-a', 'z4-pedestrian', 'z4-cyclist'
+      ];
+      actors.forEach(function (id) {
+        const el = document.getElementById(id);
+        if (el) el.setAttribute('transform', 'translate(0, 0)');
+      });
+    }
+
+    function setZoneHighlight(zoneId) {
+      for (let i = 1; i <= 4; i++) {
+        const tab = document.getElementById('tab-zone-' + i);
+        const svgGroup = document.getElementById('svg-zone-' + i);
+        if (tab) {
+          if (i === zoneId) tab.classList.add('is-active');
+          else tab.classList.remove('is-active');
+        }
+        if (svgGroup) {
+          if (i === zoneId) svgGroup.classList.add('is-active');
+          else svgGroup.classList.remove('is-active');
+        }
+      }
+    }
+
+    function updateMasteryUI() {
+      let passedCount = 0;
+      for (let i = 1; i <= 4; i++) {
+        const stateEl = document.getElementById('tab-state-' + i);
+        const res = appState.quizResults[i];
+        if (res === 'pass') passedCount += 1;
+        if (!stateEl) continue;
+        stateEl.classList.remove('is-passed', 'is-missed');
+        if (res === 'pass') {
+          stateEl.textContent = `Passed`;
+          stateEl.classList.add('is-passed');
+        } else if (res === 'fail') {
+          stateEl.textContent = `Missed`;
+          stateEl.classList.add('is-missed');
+        } else {
+          stateEl.textContent = `Unchecked`;
+        }
+      }
+
+      const tag = document.getElementById('mastery-tag');
+      if (tag) {
+        tag.textContent = `Mastered: ${passedCount} / 4 zones`;
+        tag.classList.remove('status-tag--positive');
+        if (passedCount === 4) tag.classList.add('status-tag--positive');
+      }
+    }
+
+    function renderZoneDetails(zoneId) {
+      const z = ZONES[zoneId];
+      if (!z) return;
+
+      const mapHeading = document.getElementById('map-active-heading');
+      if (mapHeading) mapHeading.textContent = z.mapHeading;
+
+      const badge = document.getElementById('detail-badge');
+      if (badge) badge.textContent = String(z.id);
+
+      const title = document.getElementById('detail-title');
+      if (title) title.textContent = z.title;
+
+      const french = document.getElementById('detail-french');
+      if (french) french.textContent = z.french;
+
+      const speed = document.getElementById('detail-speed');
+      if (speed) speed.textContent = z.speed;
+
+      const speedNote = document.getElementById('detail-speed-note');
+      if (speedNote) speedNote.textContent = z.speedNote;
+
+      const penalty = document.getElementById('detail-penalty');
+      if (penalty) penalty.textContent = z.penalty;
+
+      const penaltyNote = document.getElementById('detail-penalty-note');
+      if (penaltyNote) penaltyNote.textContent = z.penaltyNote;
+
+      const rule = document.getElementById('detail-rule');
+      if (rule) rule.textContent = z.rule;
+
+      const summaryEl = document.getElementById('detail-summary');
+      if (summaryEl) {
+        summaryEl.innerHTML = '';
+        z.summary.forEach(function (row) {
+          const wrapper = document.createElement('div');
+          wrapper.className = 'summary-row';
+          const dt = document.createElement('dt');
+          dt.className = 'summary-key';
+          dt.textContent = row.key;
+          const dd = document.createElement('dd');
+          dd.className = 'summary-val';
+          dd.style.margin = '0';
+          dd.textContent = row.val;
+          wrapper.appendChild(dt);
+          wrapper.appendChild(dd);
+          summaryEl.appendChild(wrapper);
+        });
+      }
+
+      // Show zone-specific map toggles
+      const ctrl2 = document.getElementById('ctrl-zone-2');
+      const ctrl3 = document.getElementById('ctrl-zone-3');
+      if (ctrl2) {
+        if (zoneId === 2) {
+          ctrl2.classList.remove('is-hidden');
+          ctrl2.style.display = 'flex';
+        } else {
+          ctrl2.classList.add('is-hidden');
+          ctrl2.style.display = 'none';
+        }
+      }
+      if (ctrl3) {
+        if (zoneId === 3) {
+          ctrl3.classList.remove('is-hidden');
+          ctrl3.style.display = 'flex';
+        } else {
+          ctrl3.classList.add('is-hidden');
+          ctrl3.style.display = 'none';
+        }
+      }
+
+      updateSimBannerDefault();
+      renderQuiz(zoneId);
+    }
+
+    function updateSimBannerDefault() {
+      const banner = document.getElementById('sim-status');
+      if (!banner) return;
+      banner.className = 'sim-status-banner';
+      if (appState.activeZone === 1) {
+        banner.textContent = `Zone 1 ready: Watch why Car B on the narrow side road goes before your wide boulevard.`;
+      } else if (appState.activeZone === 2) {
+        if (appState.zone2Mode === 'giratoire') {
+          banner.textContent = `Zone 2 (Carrefour à sens giratoire): Circulating Car C inside the ring has priority over entering Car A.`;
+        } else {
+          banner.textContent = `Zone 2 (Traditional Rond-point): No entry signs—entering Car A from the right has priority over circulating Car C!`;
+        }
+      } else if (appState.activeZone === 3) {
+        if (appState.zone3Mode === 'busy') {
+          banner.textContent = `Zone 3 (Cross-traffic approaching): Car A must wait behind the thick dashed yield line until Car C clears.`;
+        } else {
+          banner.textContent = `Zone 3 (Cross-road clear): Car A slows, checks both ways, and proceeds without a mandatory full stop.`;
+        }
+      } else {
+        banner.textContent = `Zone 4 (Zone de rencontre): Pedestrian holds 1st priority on the roadway; Car A creeps at ≤ 20 km/h while cyclist rides contraflow.`;
+      }
+    }
+
+    function renderQuiz(zoneId) {
+      const z = ZONES[zoneId];
+      if (!z) return;
+      const qData = z.quiz;
+      const selectedId = appState.selectedOptions[zoneId];
+      const result = appState.quizResults[zoneId];
+
+      const qEl = document.getElementById('quiz-question');
+      if (qEl) qEl.textContent = qData.question;
+
+      const statusTag = document.getElementById('quiz-status-tag');
+      if (statusTag) {
+        statusTag.className = 'status-tag';
+        if (result === 'pass') {
+          statusTag.textContent = `Trap Cleared`;
+          statusTag.classList.add('status-tag--positive');
+        } else if (result === 'fail') {
+          statusTag.textContent = `Trap Missed`;
+          statusTag.classList.add('status-tag--warning');
+        } else {
+          statusTag.textContent = `ETG Trap Check`;
+        }
+      }
+
+      const optsEl = document.getElementById('quiz-options');
+      if (optsEl) {
+        optsEl.innerHTML = '';
+        qData.options.forEach(function (opt) {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'quiz-option';
+          if (result !== null) {
+            btn.disabled = true;
+            if (opt.id === qData.correctId) {
+              btn.classList.add('is-correct');
+            } else if (opt.id === selectedId && result === 'fail') {
+              btn.classList.add('is-wrong');
+            }
+          }
+          btn.onclick = function () { answerQuiz(zoneId, opt.id); };
+
+          const letter = document.createElement('span');
+          letter.className = 'quiz-letter';
+          letter.textContent = opt.id.toUpperCase();
+
+          const txt = document.createElement('span');
+          txt.textContent = opt.text;
+
+          btn.appendChild(letter);
+          btn.appendChild(txt);
+          optsEl.appendChild(btn);
+        });
+      }
+
+      const fbEl = document.getElementById('quiz-feedback');
+      const fbHead = document.getElementById('quiz-feedback-head');
+      const fbBody = document.getElementById('quiz-feedback-body');
+      const retryBtn = document.getElementById('btn-retry-quiz');
+
+      if (fbEl && fbHead && fbBody) {
+        if (result === 'pass') {
+          fbEl.className = 'quiz-feedback quiz-feedback--pass';
+          fbHead.textContent = `Correct — Rule Locked In`;
+          fbBody.textContent = qData.passMsg;
+        } else if (result === 'fail') {
+          fbEl.className = 'quiz-feedback quiz-feedback--fail';
+          fbHead.textContent = `Not quite — ETG Trap Alert`;
+          fbBody.textContent = qData.failMsg;
+        } else {
+          fbEl.className = 'quiz-feedback is-hidden';
+          fbHead.textContent = '';
+          fbBody.textContent = '';
+        }
+      }
+
+      if (retryBtn) {
+        if (result !== null) retryBtn.classList.remove('is-hidden');
+        else retryBtn.classList.add('is-hidden');
+      }
+
+      const nextBtn = document.getElementById('btn-next-zone');
+      if (nextBtn) {
+        const nextNum = zoneId < 4 ? zoneId + 1 : 1;
+        nextBtn.textContent = zoneId < 4 ? `Next: Zone ${nextNum} →` : `Back to Zone 1 →`;
+      }
+    }
+
+    function selectZone(zoneId) {
+      if (!ZONES[zoneId]) return;
+      clearSimAnimations();
+      appState.activeZone = zoneId;
+      setZoneHighlight(zoneId);
+      renderZoneDetails(zoneId);
+      persistState();
+    }
+
+    function handleZoneKey(event, zoneId) {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        selectZone(zoneId);
+      }
+    }
+
+    function setZone2Mode(mode) {
+      clearSimAnimations();
+      appState.zone2Mode = mode === 'rondpoint' ? 'rondpoint' : 'giratoire';
+      const layerGir = document.getElementById('z2-layer-giratoire');
+      const layerRp = document.getElementById('z2-layer-rondpoint');
+      const titleSvg = document.getElementById('z2-svg-title');
+      const btnGir = document.getElementById('btn-z2-giratoire');
+      const btnRp = document.getElementById('btn-z2-rondpoint');
+
+      if (appState.zone2Mode === 'giratoire') {
+        if (layerGir) layerGir.classList.remove('is-hidden');
+        if (layerRp) layerRp.classList.add('is-hidden');
+        if (titleSvg) titleSvg.textContent = `2 · CARREFOUR À SENS GIRATOIRE`;
+        if (btnGir) btnGir.classList.add('is-selected');
+        if (btnRp) btnRp.classList.remove('is-selected');
+      } else {
+        if (layerGir) layerGir.classList.add('is-hidden');
+        if (layerRp) layerRp.classList.remove('is-hidden');
+        if (titleSvg) titleSvg.textContent = `2 · ROND-POINT (ÉTOILE)`;
+        if (btnGir) btnGir.classList.remove('is-selected');
+        if (btnRp) btnRp.classList.add('is-selected');
+      }
+
+      if (appState.activeZone === 2) {
+        updateSimBannerDefault();
+      }
+      persistState();
+    }
+
+    function setZone3Mode(mode) {
+      clearSimAnimations();
+      appState.zone3Mode = mode === 'clear' ? 'clear' : 'busy';
+      const carC = document.getElementById('z3-car-c');
+      const crossFlow = document.getElementById('z3-cross-flow');
+      const crossHead = document.getElementById('z3-cross-head');
+      const egoArrow = document.getElementById('z3-ego-arrow');
+      const tagBg = document.getElementById('z3-ego-tag-bg');
+      const tagTxt = document.getElementById('z3-ego-tag-text');
+      const btnBusy = document.getElementById('btn-z3-busy');
+      const btnClear = document.getElementById('btn-z3-clear');
+
+      if (appState.zone3Mode === 'busy') {
+        if (carC) carC.classList.remove('is-hidden');
+        if (crossFlow) crossFlow.classList.remove('is-hidden');
+        if (crossHead) crossHead.classList.remove('is-hidden');
+        if (egoArrow) egoArrow.setAttribute('class', 'flow-yield');
+        if (tagBg) tagBg.setAttribute('class', 'actor-tag-yield');
+        if (tagTxt) tagTxt.textContent = `YIELD IF BUSY`;
+        if (btnBusy) btnBusy.classList.add('is-selected');
+        if (btnClear) btnClear.classList.remove('is-selected');
+      } else {
+        if (carC) carC.classList.add('is-hidden');
+        if (crossFlow) crossFlow.classList.add('is-hidden');
+        if (crossHead) crossHead.classList.add('is-hidden');
+        if (egoArrow) egoArrow.setAttribute('class', 'flow-go');
+        if (tagBg) tagBg.setAttribute('class', 'actor-tag-go');
+        if (tagTxt) tagTxt.textContent = `CLEAR: GO SLOW`;
+        if (btnBusy) btnBusy.classList.remove('is-selected');
+        if (btnClear) btnClear.classList.add('is-selected');
+      }
+
+      if (appState.activeZone === 3) {
+        updateSimBannerDefault();
+      }
+      persistState();
+    }
+
+    function runSimulation() {
+      clearSimAnimations();
+      const banner = document.getElementById('sim-status');
+      const zId = appState.activeZone;
+
+      if (zId === 1) {
+        const carB = document.getElementById('z1-car-b');
+        const carA = document.getElementById('z1-car-a');
+        if (carA) carA.setAttribute('transform', 'translate(0, -14)');
+        if (carB) carB.setAttribute('transform', 'translate(-170, 0)');
+        if (banner) {
+          banner.className = 'sim-status-banner sim-status-banner--yield';
+          banner.textContent = `Step 1: Your vehicle (A) yields at the junction. Car B crosses first from the narrow street on your right.`;
+        }
+        simTimeoutId = setTimeout(function () {
+          if (carA) carA.setAttribute('transform', 'translate(0, -125)');
+          if (banner) {
+            banner.className = 'sim-status-banner sim-status-banner--go';
+            banner.textContent = `Step 2: Once the right side is clear, your vehicle safely proceeds straight through.`;
+          }
+        }, 550);
+      } else if (zId === 2) {
+        if (appState.zone2Mode === 'giratoire') {
+          const carC = document.getElementById('z2-gir-car-c');
+          const carA = document.getElementById('z2-gir-car-a');
+          if (carC) carC.setAttribute('transform', 'translate(66, -12)');
+          if (carA) carA.setAttribute('transform', 'translate(0, -6)');
+          if (banner) {
+            banner.className = 'sim-status-banner sim-status-banner--yield';
+            banner.textContent = `Step 1 (Giratoire): Car A holds behind the dashed yield line while circulating Car C passes.`;
+          }
+          simTimeoutId = setTimeout(function () {
+            if (carA) carA.setAttribute('transform', 'translate(18, -48)');
+            if (banner) {
+              banner.className = 'sim-status-banner sim-status-banner--go';
+              banner.textContent = `Step 2: Ring is clear—Car A enters counter-clockwise behind Car C.`;
+            }
+          }, 550);
+        } else {
+          const carC = document.getElementById('z2-rp-car-c');
+          const carA = document.getElementById('z2-rp-car-a');
+          if (carC) carC.setAttribute('transform', 'translate(6, 6)');
+          if (carA) carA.setAttribute('transform', 'translate(6, -54)');
+          if (banner) {
+            banner.className = 'sim-status-banner sim-status-banner--go';
+            banner.textContent = `Step 1 (Rond-point): Circulating Car C yields inside the circle so entering Car A from the right goes first!`;
+          }
+          simTimeoutId = setTimeout(function () {
+            if (carC) carC.setAttribute('transform', 'translate(62, 16)');
+            if (banner) {
+              banner.className = 'sim-status-banner sim-status-banner--yield';
+              banner.textContent = `Step 2: After Car A merges from the right, Car C resumes circulating.`;
+            }
+          }, 550);
+        }
+      } else if (zId === 3) {
+        const carC = document.getElementById('z3-car-c');
+        const carA = document.getElementById('z3-car-a');
+        if (appState.zone3Mode === 'busy') {
+          if (carC) carC.setAttribute('transform', 'translate(210, 0)');
+          if (carA) carA.setAttribute('transform', 'translate(0, -34)');
+          if (banner) {
+            banner.className = 'sim-status-banner sim-status-banner--yield';
+            banner.textContent = `Step 1 (Cross-traffic present): Car A waits behind the thick dashed yield line while Car C clears the priority road.`;
+          }
+          simTimeoutId = setTimeout(function () {
+            if (carA) carA.setAttribute('transform', 'translate(24, -84)');
+            if (banner) {
+              banner.className = 'sim-status-banner sim-status-banner--go';
+              banner.textContent = `Step 2: Cross-road is now clear—Car A merges onto the priority road.`;
+            }
+          }, 550);
+        } else {
+          if (carA) carA.setAttribute('transform', 'translate(28, -86)');
+          if (banner) {
+            banner.className = 'sim-status-banner sim-status-banner--go';
+            banner.textContent = `Cross-road empty: Car A slows to check left and right, then crosses the dashed yield line smoothly without a dead stop.`;
+          }
+        }
+      } else if (zId === 4) {
+        const ped = document.getElementById('z4-pedestrian');
+        const cyc = document.getElementById('z4-cyclist');
+        const carA = document.getElementById('z4-car-a');
+        if (ped) ped.setAttribute('transform', 'translate(34, -12)');
+        if (cyc) cyc.setAttribute('transform', 'translate(-120, 0)');
+        if (carA) carA.setAttribute('transform', 'translate(24, 0)');
+        if (banner) {
+          banner.className = 'sim-status-banner sim-status-banner--go';
+          banner.textContent = `Zone de rencontre flow: Pedestrian walks first on the roadway, cyclist rides contraflow, and Car A stays ≤ 20 km/h giving full clearance.`;
+        }
+      }
+    }
+
+    function answerQuiz(zoneId, optionId) {
+      const z = ZONES[zoneId];
+      if (!z) return;
+      appState.selectedOptions[zoneId] = optionId;
+      appState.quizResults[zoneId] = optionId === z.quiz.correctId ? 'pass' : 'fail';
+      updateMasteryUI();
+      renderQuiz(zoneId);
+      persistState();
+    }
+
+    function retryCurrentQuiz() {
+      const zoneId = appState.activeZone;
+      appState.selectedOptions[zoneId] = null;
+      appState.quizResults[zoneId] = null;
+      updateMasteryUI();
+      renderQuiz(zoneId);
+      persistState();
+    }
+
+    function goNextZone() {
+      const nextId = appState.activeZone < 4 ? appState.activeZone + 1 : 1;
+      selectZone(nextId);
+    }
+
+    function handleResetProgress(btn) {
+      if (!btn) return;
+      if (btn.dataset.armed !== 'true') {
+        btn.dataset.armed = 'true';
+        btn.textContent = `Click again to confirm reset`;
+        return;
+      }
+      btn.dataset.armed = 'false';
+      btn.textContent = `Reset Mastery Progress`;
+      appState.quizResults = { 1: null, 2: null, 3: null, 4: null };
+      appState.selectedOptions = { 1: null, 2: null, 3: null, 4: null };
+      setZone2Mode('giratoire');
+      setZone3Mode('busy');
+      selectZone(1);
+      updateMasteryUI();
+      persistState();
+    }
+
+    async function initApp() {
+      if (window.notebookAppApi && typeof window.notebookAppApi.getAppState === 'function') {
+        try {
+          const saved = await window.notebookAppApi.getAppState();
+          if (saved && typeof saved === 'object') {
+            if (saved.activeZone && ZONES[saved.activeZone]) {
+              appState.activeZone = saved.activeZone;
+            }
+            if (saved.zone2Mode === 'rondpoint' || saved.zone2Mode === 'giratoire') {
+              appState.zone2Mode = saved.zone2Mode;
+            }
+            if (saved.zone3Mode === 'clear' || saved.zone3Mode === 'busy') {
+              appState.zone3Mode = saved.zone3Mode;
+            }
+            if (saved.quizResults && typeof saved.quizResults === 'object') {
+              for (let i = 1; i <= 4; i++) {
+                if (saved.quizResults[i] === 'pass' || saved.quizResults[i] === 'fail') {
+                  appState.quizResults[i] = saved.quizResults[i];
+                }
+              }
+            }
+            if (saved.selectedOptions && typeof saved.selectedOptions === 'object') {
+              for (let i = 1; i <= 4; i++) {
+                if (typeof saved.selectedOptions[i] === 'string') {
+                  appState.selectedOptions[i] = saved.selectedOptions[i];
+                }
+              }
+            }
+          }
+        } catch (err) {
+          // Proceed with clean defaults if state retrieval fails
+        }
+      }
+
+      setZone2Mode(appState.zone2Mode);
+      setZone3Mode(appState.zone3Mode);
+      setZoneHighlight(appState.activeZone);
+      updateMasteryUI();
+      renderZoneDetails(appState.activeZone);
+
+      if (window.notebookAppApi && typeof window.notebookAppApi.notifyAppReady === 'function') {
+        window.notebookAppApi.notifyAppReady();
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', initApp);
+  </script>
+<a href="../index.html#/tools" style="position:fixed;left:16px;bottom:16px;z-index:9999;background:#ff6b4a;color:#fff;font:800 15px/1 Nunito,system-ui,sans-serif;padding:12px 18px;border-radius:999px;text-decoration:none;box-shadow:0 4px 0 #b9432c">← Back to study site</a>
+</body>
+</html>

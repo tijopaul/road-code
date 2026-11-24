@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stopping Distance Visualiser</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fff7ee;--surface:#ffffff;--surface2:#f6f0ff;--ink:#2a2140;--muted:#6d6487;--line:#ece3f7;
+  --primary:#7b4dff;--primary-ink:#ffffff;--pink:#ff4f93;--orange:#ff9a1f;--yellow:#ffc93c;--green:#14b383;--red:#ff4757;--blue:#3a86ff;
+  --road:#4b4a5c;--road-line:#ffffff;--grass:#c4ecd0;--car:#7b4dff;--glass:#cfe6ff;
+  --shadow:0 4px 0 rgba(42,33,64,.06),0 12px 28px rgba(42,33,64,.08);--r:22px;color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#16121f;--surface:#221b31;--surface2:#2b2340;--ink:#f4effd;--muted:#b3a9cc;--line:#3a3052;
+  --primary:#a68bff;--primary-ink:#1a1328;--pink:#ff7fb4;--orange:#ffb04d;--yellow:#ffd666;--green:#3ddba9;--red:#ff6b78;--blue:#6aa5ff;
+  --road:#3a3948;--road-line:#d9d4e6;--grass:#1f3a2b;--car:#a68bff;--glass:#9cc2ee;
+  --shadow:0 4px 0 rgba(0,0,0,.25),0 12px 28px rgba(0,0,0,.3);color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#16121f;--surface:#221b31;--surface2:#2b2340;--ink:#f4effd;--muted:#b3a9cc;--line:#3a3052;
+  --primary:#a68bff;--primary-ink:#1a1328;--pink:#ff7fb4;--orange:#ffb04d;--yellow:#ffd666;--green:#3ddba9;--red:#ff6b78;--blue:#6aa5ff;
+  --road:#3a3948;--road-line:#d9d4e6;--grass:#1f3a2b;--car:#a68bff;--glass:#9cc2ee;
+  --shadow:0 4px 0 rgba(0,0,0,.25),0 12px 28px rgba(0,0,0,.3);color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font-family:Nunito,system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
+.wrap{max-width:980px;margin:0 auto;padding:16px 16px 56px}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.back,.theme-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:999px;background:var(--surface);border:2px solid var(--line);color:var(--ink);font:inherit;font-weight:800;text-decoration:none;cursor:pointer;box-shadow:var(--shadow)}
+.back:hover,.theme-btn:hover{border-color:var(--primary)}
+.hero{text-align:center;margin:22px 0 6px}
+.hero .emoji{font-size:52px;line-height:1}
+h1{font-size:clamp(26px,5vw,38px);font-weight:900;margin:6px 0 4px;letter-spacing:-.5px}
+.sub{color:var(--muted);font-weight:600;margin:0 auto;max-width:640px}
+.fr{color:var(--muted);font-style:italic;font-weight:600}
+h2{font-size:22px;font-weight:900;margin:0 0 10px}
+h3{font-size:17px;font-weight:800;margin:0 0 6px}
+.card{background:var(--surface);border-radius:var(--r);padding:20px;box-shadow:var(--shadow);border:2px solid var(--line);margin-top:18px}
+.grid{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.grid>.card{margin-top:0}
+.row{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end}
+.ctl{flex:1 1 220px}
+.ctl label{display:flex;justify-content:space-between;font-weight:800;margin-bottom:6px}
+.ctl label b{color:var(--primary);font-size:20px}
+input[type=range]{width:100%;accent-color:var(--primary);height:28px}
+.seg{display:inline-flex;background:var(--surface2);border-radius:999px;padding:4px;gap:4px;border:2px solid var(--line)}
+.seg button{border:0;background:transparent;color:var(--ink);font:inherit;font-weight:800;padding:8px 14px;border-radius:999px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--primary);color:var(--primary-ink)}
+.btn{border:0;background:var(--primary);color:var(--primary-ink);font:inherit;font-weight:900;padding:10px 18px;border-radius:999px;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.15)}
+.btn:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.15)}
+.btn.ghost{background:var(--surface2);color:var(--ink);border:2px solid var(--line);box-shadow:none}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+.stat{border-radius:18px;padding:12px;text-align:center;background:var(--surface2);border:2px solid var(--line)}
+.stat .n{font-size:clamp(22px,5vw,32px);font-weight:900;line-height:1.1}
+.stat .l{font-size:13px;font-weight:700;color:var(--muted)}
+.stat.react .n{color:var(--orange)} .stat.brake .n{color:var(--pink)} .stat.total .n{color:var(--primary)}
+.formula{font-weight:700;color:var(--muted);font-size:14px;margin-top:6px}
+.road-svg{width:100%;height:auto;display:block;margin-top:14px;border-radius:16px;overflow:hidden}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-weight:700;font-size:14px;margin-top:8px}
+.dot{display:inline-block;width:14px;height:14px;border-radius:5px;vertical-align:-2px;margin-right:4px}
+table{width:100%;border-collapse:collapse;font-weight:700}
+th,td{padding:8px 6px;text-align:center;border-bottom:2px solid var(--line)}
+th{color:var(--muted);font-size:13px}
+tr.hl td{background:var(--surface2);color:var(--primary)}
+.tablewrap{overflow-x:auto}
+.callout{border-radius:16px;padding:12px 14px;margin-top:12px;font-weight:600;border:2px solid var(--line);background:var(--surface2)}
+.callout.warn{border-color:color-mix(in srgb,var(--red) 45%,transparent)}
+.callout.info{border-color:color-mix(in srgb,var(--blue) 45%,transparent)}
+.callout.good{border-color:color-mix(in srgb,var(--green) 50%,transparent)}
+.big{font-size:clamp(30px,7vw,44px);font-weight:900;color:var(--green);line-height:1}
+.count{font-size:40px;font-weight:900;color:var(--primary);min-height:52px;text-align:center}
+/* quiz */
+.q{margin-top:14px;padding:14px;border-radius:18px;background:var(--surface2);border:2px solid var(--line)}
+.q p{margin:0 0 8px;font-weight:800}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.opts button{font:inherit;font-weight:700;padding:8px 14px;border-radius:999px;border:2px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.opts button:hover:not(:disabled){border-color:var(--primary)}
+.opts button.right{background:var(--green);border-color:var(--green);color:#fff}
+.opts button.wrong{background:var(--red);border-color:var(--red);color:#fff}
+.opts button:disabled{cursor:default}
+.fb{margin-top:8px;font-weight:700;min-height:1.5em}
+.score{margin-top:12px;font-weight:900;font-size:18px}
+@media (max-width:520px){.stats{grid-template-columns:1fr}.stat{display:flex;justify-content:space-between;align-items:center;text-align:left}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <a class="back" href="../index.html#/tools">← Back to study site</a>
+    <button class="theme-btn" id="themeBtn" type="button" aria-label="Toggle dark mode">🌓 Theme</button>
+  </div>
+
+  <header class="hero">
+    <div class="emoji">🚗💨🛑</div>
+    <h1>Stopping distance visualiser</h1>
+    <p class="sub">Stopping distance <span class="fr">(distance d'arrêt)</span> = reaction distance <span class="fr">(distance de réaction)</span> + braking distance <span class="fr">(distance de freinage)</span>. Move the sliders and watch the car stop.</p>
+  </header>
+
+  <section class="card" aria-labelledby="simTitle">
+    <h2 id="simTitle">🎛️ Set the scene</h2>
+    <div class="row">
+      <div class="ctl">
+        <label for="speed">Speed <b><span id="speedOut">50</span> km/h</b></label>
+        <input id="speed" type="range" min="30" max="130" step="10" value="50">
+      </div>
+      <div class="ctl">
+        <label for="react">Reaction time <b><span id="reactOut">1</span> s</b></label>
+        <input id="react" type="range" min="1" max="2" step="0.25" value="1">
+      </div>
+      <div>
+        <div style="font-weight:800;margin-bottom:6px">Road surface</div>
+        <div class="seg" role="group" aria-label="Road surface">
+          <button type="button" data-road="dry" aria-pressed="true">☀️ Dry</button>
+          <button type="button" data-road="wet" aria-pressed="false">🌧️ Wet</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat react"><div class="l">⏱️ Reaction distance</div><div class="n"><span id="dR">15</span> m</div></div>
+      <div class="stat brake"><div class="l">🦶 Braking distance</div><div class="n"><span id="dB">25</span> m</div></div>
+      <div class="stat total"><div class="l">🛑 Stopping distance</div><div class="n"><span id="dT">40</span> m</div></div>
+    </div>
+    <p class="formula" id="formula"></p>
+
+    <svg class="road-svg" id="road" viewBox="0 0 1000 190" role="img" aria-label="Road showing reaction and braking distances">
+      <rect x="0" y="0" width="1000" height="190" fill="var(--grass)"/>
+      <rect x="0" y="34" width="1000" height="92" fill="var(--road)"/>
+      <line x1="0" y1="80" x2="1000" y2="80" stroke="var(--road-line)" stroke-width="4" stroke-dasharray="26 22" opacity=".7"/>
+      <g id="rain" opacity="0"></g>
+      <rect id="segR" x="90" y="134" height="14" rx="7" fill="var(--orange)"/>
+      <rect id="segB" x="90" y="134" height="14" rx="7" fill="var(--pink)"/>
+      <g id="ticks"></g>
+      <g id="markers" font-family="Nunito, sans-serif" font-weight="800" font-size="15">
+        <g id="mSeen"><line y1="30" y2="130" stroke="var(--yellow)" stroke-width="3" stroke-dasharray="5 4"/><text x="-6" y="24" text-anchor="end" fill="var(--ink)">👀 seen</text></g>
+        <g id="mBrake"><line y1="30" y2="130" stroke="var(--orange)" stroke-width="3" stroke-dasharray="5 4"/><text y="24" text-anchor="middle" fill="var(--ink)">🦶 brake</text></g>
+        <g id="mStop"><line y1="30" y2="130" stroke="var(--pink)" stroke-width="3" stroke-dasharray="5 4"/><text x="6" y="24" text-anchor="start" fill="var(--ink)">🛑 stop</text></g>
+      </g>
+      <g id="car">
+        <!-- car drawn with its front bumper at x=0 -->
+        <rect x="-78" y="54" width="76" height="26" rx="10" fill="var(--car)"/>
+        <path d="M-64 56 L-52 40 H-26 L-14 56 Z" fill="var(--car)"/>
+        <path d="M-58 55 L-50 44 H-41 V55 Z M-38 55 V44 H-28 L-20 55 Z" fill="var(--glass)"/>
+        <rect x="-8" y="60" width="6" height="7" rx="2" fill="#ffe58a"/>
+        <rect id="brakeLight" x="-80" y="60" width="6" height="8" rx="2" fill="#a33"/>
+        <circle cx="-60" cy="81" r="9" fill="#222"/><circle cx="-60" cy="81" r="4" fill="#bbb"/>
+        <circle cx="-20" cy="81" r="9" fill="#222"/><circle cx="-20" cy="81" r="4" fill="#bbb"/>
+      </g>
+      <text id="speedo" x="985" y="118" text-anchor="end" font-family="Nunito, sans-serif" font-weight="900" font-size="20" fill="#fff"></text>
+    </svg>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--orange)"></span>Reaction: car still at full speed</span>
+      <span><span class="dot" style="background:var(--pink)"></span>Braking: car slows to 0</span>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button class="btn" id="play" type="button">▶ Play the stop</button>
+      <span class="formula" style="margin:0">Road scale: 0 – 340 m</span>
+    </div>
+  </section>
+
+  <div class="grid" style="margin-top:18px">
+    <section class="card">
+      <h2>🧠 Exam rules of thumb</h2>
+      <p style="margin:0"><b>Reaction distance</b> (1 s): take the tens digit of your speed × 3.<br><span class="formula">90 km/h → 9 × 3 = 27 m</span></p>
+      <p><b>Braking distance, dry</b>: tens digit squared.<br><span class="formula">90 km/h → 9 × 9 = 81 m</span></p>
+      <p style="margin-bottom:0"><b>Braking distance, wet</b>: dry × 1.5.<br><span class="formula">90 km/h → 81 × 1.5 ≈ 122 m</span></p>
+      <div class="callout warn">⚠️ Double your speed → braking distance × <b>4</b>. Speed has a huge effect!</div>
+    </section>
+
+    <section class="card">
+      <h2>📋 Quick table</h2>
+      <div class="tablewrap">
+      <table id="qt">
+        <thead><tr><th>km/h</th><th>Reaction (1 s)</th><th>Stop, dry</th><th>Stop, wet</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      </div>
+      <div class="callout info">📘 Your Ornikar lesson uses a different table (braking / stopping): <b>50 km/h → 12 / 25 m</b>, <b>80 → 32 / 64 m</b>, <b>130 → 83 / 169 m</b>. Exact figures depend on the method; the idea to remember is the same: <b>the faster you go, the less chance you have to stop in time.</b></div>
+    </section>
+  </div>
+
+  <section class="card" aria-labelledby="twoTitle">
+    <h2 id="twoTitle">✌️ The 2-second rule <span class="fr">(distance de sécurité)</span></h2>
+    <div class="grid">
+      <div>
+        <p style="margin-top:0">Keep at least <b>2 seconds</b> between you and the vehicle in front. That covers your reaction time if it brakes suddenly.</p>
+        <div class="big"><span id="twoM">28</span> m</div>
+        <p class="formula" id="twoTxt"></p>
+        <div class="callout good">✅ Quick check: (speed ÷ 10) × 6. At 90 km/h → 9 × 6 = 54 m.<br>🛣️ On the motorway: leave at least <b>2 white dashes</b> of the edge line between you and the car ahead.</div>
+      </div>
+      <div>
+        <p style="margin-top:0;font-weight:700">How to count it: when the car in front passes a fixed point (a tree, a sign), say <i>"one thousand and one, one thousand and two"</i>. If you reach the point before you finish, you're too close!</p>
+        <svg viewBox="0 0 400 110" style="width:100%;height:auto;border-radius:14px" role="img" aria-label="Two cars passing a post">
+          <rect width="400" height="110" fill="var(--grass)"/>
+          <rect y="30" width="400" height="56" fill="var(--road)"/>
+          <line x1="0" y1="58" x2="400" y2="58" stroke="var(--road-line)" stroke-width="3" stroke-dasharray="16 14" opacity=".6"/>
+          <g transform="translate(250,0)"><rect x="-3" y="4" width="6" height="30" fill="var(--ink)"/><circle cy="8" r="9" fill="var(--yellow)"/><text y="13" text-anchor="middle" font-size="12">🌳</text></g>
+          <g id="lead"><rect x="-50" y="40" width="48" height="20" rx="7" fill="var(--blue)"/><circle cx="-40" cy="61" r="6" fill="#222"/><circle cx="-12" cy="61" r="6" fill="#222"/></g>
+          <g id="follow"><rect x="-50" y="40" width="48" height="20" rx="7" fill="var(--car)"/><circle cx="-40" cy="61" r="6" fill="#222"/><circle cx="-12" cy="61" r="6" fill="#222"/></g>
+        </svg>
+        <div class="count" id="count" aria-live="polite"></div>
+        <button class="btn ghost" id="countBtn" type="button">▶ Try the count</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="quizTitle">
+    <h2 id="quizTitle">✅ Self-check</h2>
+    <div id="quiz"></div>
+  </section>
+</div>
+
+<script>
+(function(){
+  /* ---------- theme toggle ---------- */
+  var root=document.documentElement;
+  try{var saved=localStorage.getItem('theme');if(saved==='dark'||saved==='light')root.setAttribute('data-theme',saved);}catch(e){}
+  document.getElementById('themeBtn').addEventListener('click',function(){
+    var cur=root.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+    var next=cur==='dark'?'light':'dark';root.setAttribute('data-theme',next);
+    try{localStorage.setItem('theme',next);}catch(e){}
+  });
+
+  /* ---------- model ---------- */
+  var X0=90, X1=980, SCALE=340; // metres shown on the road
+  function px(m){return X0+(X1-X0)*m/SCALE;}
+  var state={v:50,t:1,wet:false};
+  function calc(v,t,wet){var r=(v/10)*3*t, b=Math.pow(v/10,2)*(wet?1.5:1);return {r:r,b:b,total:r+b};}
+  function fmt(n){return (Math.round(n*10)/10).toLocaleString('en-GB');}
+
+  var $=function(id){return document.getElementById(id);};
+  var speed=$('speed'), react=$('react');
+
+  // ticks
+  var ticks=$('ticks'), NS='http://www.w3.org/2000/svg', h='';
+  for(var m=0;m<=SCALE;m+=50){h+='<line x1="'+px(m)+'" x2="'+px(m)+'" y1="152" y2="160" stroke="var(--ink)" stroke-width="2" opacity=".5"/><text x="'+px(m)+'" y="178" text-anchor="middle" font-family="Nunito, sans-serif" font-size="14" font-weight="700" fill="var(--ink)" opacity=".75">'+m+' m</text>';}
+  ticks.innerHTML=h;
+  // rain drops
+  var rain='';for(var i=0;i<60;i++){var x=(i*67)%1000, y=(i*37)%120+30;rain+='<line x1="'+x+'" y1="'+y+'" x2="'+(x-6)+'" y2="'+(y+12)+'" stroke="#9cc8ff" stroke-width="2" stroke-linecap="round"/>';}
+  $('rain').innerHTML=rain;
+
+  function placeMarker(id,x){$(id).setAttribute('transform','translate('+x+',0)');}
+  function setCar(m){$('car').setAttribute('transform','translate('+px(m)+',0)');}
+
+  var anim=null;
+  function render(){
+    var d=calc(state.v,state.t,state.wet);
+    $('speedOut').textContent=state.v;
+    $('reactOut').textContent=state.t;
+    $('dR').textContent=fmt(d.r);$('dB').textContent=fmt(d.b);$('dT').textContent=fmt(d.total);
+    $('formula').textContent='Reaction: ('+state.v+' ÷ 10) × 3 × '+state.t+' s = '+fmt(d.r)+' m · Braking: ('+state.v+' ÷ 10)²'+(state.wet?' × 1.5':'')+' = '+fmt(d.b)+' m';
+    var segR=$('segR'),segB=$('segB');
+    segR.setAttribute('width',Math.max(0,px(d.r)-X0));
+    segB.setAttribute('x',px(d.r));segB.setAttribute('width',Math.max(0,px(d.total)-px(d.r)));
+    placeMarker('mSeen',X0);placeMarker('mBrake',px(d.r));placeMarker('mStop',Math.min(px(d.total),X1));
+    // avoid label overlap on short distances
+    // hide the middle label when it would collide with its neighbours
+    var bt=$('mBrake').querySelector('text');
+    bt.setAttribute('opacity',(px(d.r)-X0)<60||(px(d.total)-px(d.r))<60?'0':'1');
+    // keep the stop label inside the road
+    var st=$('mStop').querySelector('text');
+    if(px(d.total)>X1-70){st.setAttribute('x','-6');st.setAttribute('text-anchor','end');}else{st.setAttribute('x','6');st.setAttribute('text-anchor','start');}
+    $('rain').setAttribute('opacity',state.wet?'.8':'0');
+    if(!anim){setCar(0);$('brakeLight').setAttribute('fill','#a33');$('speedo').textContent='';}
+    // quick table highlight
+    renderTable();
+    // 2 second rule
+    var ms=state.v/3.6;
+    $('twoM').textContent=Math.round(ms*2);
+    $('twoTxt').textContent='At '+state.v+' km/h you cover about '+fmt(ms)+' m every second, so 2 s ≈ '+Math.round(ms*2)+' m (rule of thumb: '+(state.v/10)*6+' m).';
+  }
+  function renderTable(){
+    var rows='';[30,50,70,80,90,110,130].forEach(function(v){
+      var dry=calc(v,1,false),wet=calc(v,1,true);
+      rows+='<tr'+(v===state.v?' class="hl"':'')+'><td>'+v+'</td><td>'+fmt(dry.r)+' m</td><td>'+fmt(dry.total)+' m</td><td>'+fmt(wet.total)+' m</td></tr>';
+    });
+    document.querySelector('#qt tbody').innerHTML=rows;
+  }
+
+  function play(){
+    if(anim)cancelAnimationFrame(anim);
+    var d=calc(state.v,state.t,state.wet);
+    var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var tR=reduce?0:900*state.t, tB=reduce?0:1700, start=null;
+    function step(ts){
+      if(start===null)start=ts;
+      var e=ts-start,pos,sp,braking=false;
+      if(e<tR){pos=d.r*e/tR;sp=state.v;}
+      else if(e<tR+tB){var u=(e-tR)/tB;pos=d.r+d.b*(1-(1-u)*(1-u));sp=state.v*(1-u);braking=true;}
+      else{pos=d.total;sp=0;braking=true;}
+      setCar(Math.min(pos,SCALE));
+      $('brakeLight').setAttribute('fill',braking?'#ff2d2d':'#a33');
+      $('speedo').textContent=Math.round(sp)+' km/h';
+      if(e<tR+tB){anim=requestAnimationFrame(step);}else{anim=null;$('speedo').textContent='Stopped after '+fmt(d.total)+' m';}
+    }
+    anim=requestAnimationFrame(step);
+  }
+
+  speed.addEventListener('input',function(){state.v=+speed.value;if(anim){cancelAnimationFrame(anim);anim=null;}render();});
+  react.addEventListener('input',function(){state.t=+react.value;if(anim){cancelAnimationFrame(anim);anim=null;}render();});
+  document.querySelectorAll('[data-road]').forEach(function(b){b.addEventListener('click',function(){
+    state.wet=b.getAttribute('data-road')==='wet';
+    document.querySelectorAll('[data-road]').forEach(function(o){o.setAttribute('aria-pressed',String(o===b));});
+    if(anim){cancelAnimationFrame(anim);anim=null;}render();
+  });});
+  $('play').addEventListener('click',play);
+
+  /* ---------- 2-second count animation ---------- */
+  var cAnim=null;
+  function placeCars(lx,fx){$('lead').setAttribute('transform','translate('+lx+',0)');$('follow').setAttribute('transform','translate('+fx+',0)');}
+  placeCars(230,110);
+  $('countBtn').addEventListener('click',function(){
+    if(cAnim)cancelAnimationFrame(cAnim);
+    var startT=null,GAP=120,SPEED=60; // px per second, gap = 2 s
+    var leadStart=200;
+    function f(ts){
+      if(startT===null)startT=ts;var s=(ts-startT)/1000;
+      var lx=leadStart+SPEED*s, fx=lx-GAP;
+      placeCars(lx%460,fx%460);
+      var tPost=(250+0-leadStart)/SPEED; // lead front reaches post
+      var since=s-tPost;
+      var c=$('count');
+      if(since<0)c.textContent='🚙 …';
+      else if(since<1)c.textContent='“one thousand and one…”';
+      else if(since<2)c.textContent='“one thousand and two…”';
+      else c.textContent='✅ 2 seconds: safe gap!';
+      if(s<tPost+2.6)cAnim=requestAnimationFrame(f);else cAnim=null;
+    }
+    cAnim=requestAnimationFrame(f);
+  });
+
+  render();
+
+  /* ---------- quiz ---------- */
+  var QUIZ=[
+    {q:'Using the rule of thumb, what is the braking distance at 90 km/h on a dry road?',o:['27 m','54 m','81 m','122 m'],a:2,e:'Tens digit squared: 9 × 9 = 81 m.'},
+    {q:'What is the reaction distance at 70 km/h with a 1-second reaction time?',o:['7 m','21 m','49 m'],a:1,e:'(70 ÷ 10) × 3 = 21 m. Your car still travels at full speed during this time.'},
+    {q:'You double your speed. Your braking distance is multiplied by…',o:['2','3','4'],a:2,e:'Braking distance grows with the square of speed: 2² = 4.'}
+  ];
+  buildQuiz(document.getElementById('quiz'),QUIZ);
+  function buildQuiz(el,qs){
+    var score=0,answered=0,html='';
+    qs.forEach(function(q,i){html+='<div class="q"><p>'+(i+1)+'. '+q.q+'</p><div class="opts">'+q.o.map(function(o,j){return '<button type="button" data-q="'+i+'" data-o="'+j+'">'+o+'</button>';}).join('')+'</div><div class="fb" aria-live="polite"></div></div>';});
+    html+='<div class="score" aria-live="polite"></div>';el.innerHTML=html;
+    el.addEventListener('click',function(ev){
+      var b=ev.target.closest('button[data-q]');if(!b||b.disabled)return;
+      var i=+b.dataset.q,j=+b.dataset.o,q=qs[i],box=b.closest('.q');
+      box.querySelectorAll('button').forEach(function(x){x.disabled=true;if(+x.dataset.o===q.a)x.classList.add('right');});
+      if(j===q.a){score++;box.querySelector('.fb').textContent='🎉 Correct! '+q.e;}else{b.classList.add('wrong');box.querySelector('.fb').textContent='❌ Not quite. '+q.e;}
+      answered++;if(answered===qs.length)el.querySelector('.score').textContent='Score: '+score+' / '+qs.length+(score===qs.length?' 🏆':' – read the panels above and try again!');
+    });
+  }
+})();
+</script>
+</body>
+</html>

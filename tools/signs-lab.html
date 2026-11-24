@@ -1,0 +1,2958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="artifact-type" content="tool">
+  <meta name="design-style" content="handbook">
+  <title>French Road Signs &amp; Panonceau Study Lab — Code de la Route (ETG)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: light;
+
+      /* Handbook surface & ink tokens */
+      --background: #ffffff;
+      --surface-container-low: #f3f2f1;
+      --surface-container: #e8e7e5;
+      --surface-container-high: #dbdad9;
+
+      --on-surface: #0b0c0c;
+      --on-surface-variant: #505a5f;
+
+      --outline: #0b0c0c;
+      --outline-variant: #b1b4b6;
+
+      /* Handbook accents */
+      --primary: #162e51;
+      --on-primary: #ffffff;
+      --primary-container: #d2e2f1;
+      --on-primary-container: #0c2d4a;
+      --secondary: #4c2c92;
+      --tertiary: #1a569e;
+      --error: #d4351c;
+      --on-error: #ffffff;
+
+      /* Data series */
+      --data-1: #1a569e;
+      --data-2: #c75a0a;
+      --data-3: #28a197;
+      --data-4: #4c2c92;
+      --data-context: #b1b4b6;
+
+      /* Shared semantic & focus tokens */
+      --positive: #00703c;
+      --on-positive: #ffffff;
+      --positive-container: #e6f2ec;
+      --warning: #a34700;
+      --warning-container: #fcf1e6;
+      --error-container: #fbeae7;
+      --focus: #162e51;
+
+      /* Road-sign visual tokens (used strictly inside SVG sign diagrams) */
+      --sign-red: #d4351c;
+      --sign-blue: #005ea5;
+      --sign-white: #ffffff;
+      --sign-black: #0b0c0c;
+      --sign-amber: #c75a0a;
+      --sign-green: #00703c;
+      --sign-road: #3b4246;
+      --sign-post: #7a8185;
+
+      /* Fonts */
+      --font-headline: 'Public Sans', sans-serif;
+      --font-body: 'Public Sans', sans-serif;
+      --font-label: 'Public Sans', sans-serif;
+
+      /* Handbook shape (square corners) */
+      --rounded: 0;
+      --rounded-lg: 0;
+      --rounded-full: 0;
+
+      /* Style effects */
+      --top-index-rule: 6px solid var(--primary);
+      --inset-rule: 5px solid var(--tertiary);
+      --inset-error-rule: 5px solid var(--error);
+      --inset-positive-rule: 5px solid var(--positive);
+      --inset-warning-rule: 5px solid var(--warning);
+      --button-ground: 0 2px 0 var(--on-surface);
+      --button-ground-secondary: 0 2px 0 var(--sign-post);
+      --focus-yellow: #ffdd00;
+      --focus-ring: 3px solid var(--focus-yellow);
+      --focus-bar: inset 0 0 0 2px var(--on-surface);
+      --focus-underline: 0 -2px var(--focus-yellow), 0 4px var(--on-surface);
+
+      /* Type scale (tool form) */
+      --display-size: clamp(1.75rem, 1.4rem + 1.2vw, 2.35rem);
+      --headline-size: clamp(1.25rem, 1.1rem + 0.5vw, 1.5rem);
+      --subhead-size: clamp(1.0625rem, 1rem + 0.25vw, 1.1875rem);
+      --body-size: clamp(0.9375rem, 0.9rem + 0.15vw, 1rem);
+      --label-size: 0.75rem;
+
+      /* Spacing scale (4pt base) */
+      --space-xs: 0.25rem;
+      --space-sm: 0.5rem;
+      --space-md: 1rem;
+      --space-lg: 1.5rem;
+      --space-xl: 2.5rem;
+      --space-2xl: 4rem;
+
+      /* Motion */
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+      --dur-micro: 120ms;
+      --dur-short: 220ms;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      overflow-x: clip;
+      margin: 0;
+      padding: 0;
+      background: var(--background);
+      color: var(--on-surface);
+      font-family: var(--font-body);
+      font-size: var(--body-size);
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+    header { position: static !important; }
+
+    .page-grid {
+      display: grid;
+      gap: var(--space-xl);
+      padding: var(--space-lg);
+      max-width: 1200px;
+      margin: 0 auto;
+      overflow: hidden;
+    }
+    .page-grid * { min-width: 0; }
+
+    /* Typography */
+    h1, h2, h3, h4 {
+      font-family: var(--font-headline);
+      font-weight: 800;
+      letter-spacing: -0.015em;
+      line-height: 1.12;
+      margin: 0;
+      color: var(--on-surface);
+    }
+    h1 { font-size: var(--display-size); }
+    h2 { font-size: var(--headline-size); }
+    h3 { font-size: var(--subhead-size); font-weight: 700; }
+    p { margin: 0; max-width: 65ch; }
+
+    /* Top Index Bar & Header */
+    .index-header {
+      border-top: var(--top-index-rule);
+      border-bottom: 1px solid var(--on-surface);
+      padding: var(--space-sm) 0;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--space-sm);
+      font-family: var(--font-label);
+      font-weight: 700;
+      font-size: var(--label-size);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .header-block {
+      display: grid;
+      gap: var(--space-md);
+    }
+    .lead-copy {
+      font-size: var(--subhead-size);
+      color: var(--on-surface);
+      max-width: 68ch;
+    }
+    .meta-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(210px, 100%), 1fr));
+      gap: var(--space-md);
+      border-top: 1px solid var(--outline-variant);
+      border-bottom: 1px solid var(--outline-variant);
+      padding: var(--space-md) 0;
+    }
+    .kpi-tile {
+      border-left: var(--inset-rule);
+      background: var(--surface-container-low);
+      padding: var(--space-sm) var(--space-md);
+    }
+    .kpi-label {
+      font-size: var(--label-size);
+      font-weight: 700;
+      color: var(--on-surface-variant);
+      display: block;
+    }
+    .kpi-value {
+      font-size: var(--headline-size);
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      color: var(--on-surface);
+      line-height: 1.2;
+      margin-top: var(--space-xs);
+    }
+    .kpi-note {
+      font-size: var(--label-size);
+      color: var(--on-surface-variant);
+      margin-top: var(--space-xs);
+    }
+
+    /* Section Headings */
+    .section-head {
+      display: grid;
+      gap: var(--space-xs);
+      border-bottom: 2px solid var(--on-surface);
+      padding-bottom: var(--space-sm);
+      margin-bottom: var(--space-md);
+    }
+    .section-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-sm);
+      font-size: var(--label-size);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--tertiary);
+    }
+    .step-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 26px;
+      height: 26px;
+      padding: 0 var(--space-xs);
+      background: var(--primary);
+      color: var(--on-primary);
+      font-weight: 800;
+      font-size: 0.8125rem;
+    }
+
+    /* Status tags */
+    .tag {
+      display: inline-block;
+      background: var(--primary-container);
+      color: var(--on-primary-container);
+      font-family: var(--font-label);
+      font-weight: 700;
+      font-size: var(--label-size);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 0.1875rem 0.5rem;
+      border-radius: var(--rounded-full);
+    }
+    .tag--error {
+      background: var(--error-container);
+      color: var(--error);
+      border: 1px solid var(--error);
+    }
+    .tag--positive {
+      background: var(--positive-container);
+      color: var(--positive);
+      border: 1px solid var(--positive);
+    }
+    .tag--warning {
+      background: var(--warning-container);
+      color: var(--warning);
+      border: 1px solid var(--warning);
+    }
+
+    /* Buttons (Handbook grounded ledge) */
+    .btn {
+      font-family: var(--font-label);
+      font-weight: 700;
+      font-size: var(--body-size);
+      line-height: 1.2;
+      background: var(--primary);
+      color: var(--on-primary);
+      border: 0;
+      border-radius: var(--rounded);
+      padding: 0.625rem var(--space-md);
+      min-height: 44px;
+      cursor: pointer;
+      box-shadow: var(--button-ground);
+      transition: background-color var(--dur-micro) var(--ease-out), transform var(--dur-micro) var(--ease-out);
+      text-align: left;
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+    .btn:hover { background: var(--tertiary); }
+    .btn:active { transform: translateY(2px); box-shadow: none; }
+    .btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .btn--secondary {
+      background: var(--surface-container-low);
+      color: var(--on-surface);
+      border: 1px solid var(--outline-variant);
+      box-shadow: var(--button-ground-secondary);
+    }
+    .btn--secondary:hover { background: var(--surface-container); }
+    .btn--active {
+      background: var(--primary-container);
+      color: var(--on-primary-container);
+      border: 2px solid var(--primary);
+      box-shadow: none;
+    }
+    .btn--active:hover { background: var(--primary-container); }
+
+    /* Loud Handbook Yellow Focus */
+    button:focus-visible, input:focus-visible, select:focus-visible {
+      outline: var(--focus-ring);
+      outline-offset: 0;
+      box-shadow: var(--focus-bar);
+    }
+
+    /* Section 1: 4-Shape Decoder Grid */
+    .shape-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+      gap: var(--space-md);
+    }
+    .shape-card {
+      background: var(--background);
+      border: 2px solid var(--outline-variant);
+      padding: var(--space-md);
+      display: grid;
+      gap: var(--space-sm);
+      align-content: start;
+      cursor: pointer;
+      text-align: left;
+      font: inherit;
+      color: inherit;
+      transition: background-color var(--dur-micro) var(--ease-out), box-shadow var(--dur-micro) var(--ease-out);
+    }
+    .shape-card:hover {
+      background: var(--surface-container-low);
+      box-shadow: inset 0 0 0 2px var(--on-surface);
+    }
+    .shape-card[aria-pressed="true"] {
+      background: var(--surface-container-low);
+      box-shadow: inset 0 0 0 3px var(--primary);
+    }
+    .shape-card-top {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+    }
+    .shape-thumb {
+      width: 52px;
+      height: 52px;
+      flex-shrink: 0;
+    }
+    .shape-card-rule {
+      font-size: 0.875rem;
+      color: var(--on-surface);
+    }
+    .shape-card-meta {
+      font-size: var(--label-size);
+      color: var(--on-surface-variant);
+      border-top: 1px solid var(--outline-variant);
+      padding-top: var(--space-xs);
+    }
+
+    /* Section 2: Sign Selector & Interactive Composer */
+    .filter-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+      margin-bottom: var(--space-md);
+    }
+    .sign-gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(155px, 100%), 1fr));
+      gap: var(--space-sm);
+      margin-bottom: var(--space-lg);
+    }
+    .sign-tile {
+      background: var(--background);
+      border: 1px solid var(--outline-variant);
+      padding: var(--space-sm);
+      min-height: 44px;
+      display: grid;
+      gap: var(--space-xs);
+      justify-items: start;
+      align-content: space-between;
+      text-align: left;
+      cursor: pointer;
+      font: inherit;
+      color: inherit;
+      transition: background-color var(--dur-micro) var(--ease-out), box-shadow var(--dur-micro) var(--ease-out);
+    }
+    .sign-tile:hover {
+      background: var(--surface-container-low);
+      box-shadow: inset 0 0 0 2px var(--on-surface);
+    }
+    .sign-tile[aria-pressed="true"] {
+      background: var(--primary-container);
+      box-shadow: inset 0 0 0 3px var(--primary);
+    }
+    .sign-tile-head {
+      display: flex;
+      width: 100%;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: var(--space-xs);
+    }
+    .sign-tile-svg {
+      width: 54px;
+      height: 54px;
+      flex-shrink: 0;
+    }
+    .sign-tile-code {
+      font-size: var(--label-size);
+      font-weight: 700;
+      color: var(--on-surface-variant);
+      font-variant-numeric: tabular-nums;
+    }
+    .sign-tile-name {
+      font-size: 0.875rem;
+      font-weight: 700;
+      line-height: 1.2;
+      color: var(--on-surface);
+    }
+    .sign-tile-fr {
+      font-size: var(--label-size);
+      font-style: italic;
+      color: var(--on-surface-variant);
+      line-height: 1.2;
+    }
+    .sign-tile-status {
+      font-size: var(--label-size);
+      font-weight: 700;
+      color: var(--positive);
+    }
+
+    /* Interactive Composer Split Workspace */
+    .composer-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+      gap: var(--space-lg);
+      align-items: start;
+      border-top: 2px solid var(--on-surface);
+      padding-top: var(--space-lg);
+    }
+    .stage-panel {
+      background: var(--surface-container-low);
+      border: 1px solid var(--outline-variant);
+      padding: var(--space-lg);
+      display: grid;
+      gap: var(--space-md);
+    }
+    .signpost-stage {
+      background: var(--background);
+      border: 2px solid var(--outline);
+      padding: var(--space-lg) var(--space-md);
+      display: grid;
+      justify-items: center;
+      gap: 0;
+      position: relative;
+    }
+    .signpost-mast {
+      width: 12px;
+      height: 22px;
+      background: var(--sign-post);
+    }
+    .signpost-mast--short { height: 10px; }
+    .main-sign-frame {
+      width: 148px;
+      height: 148px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .panonceau-plate {
+      min-width: 144px;
+      max-width: 220px;
+      background: var(--sign-white);
+      border: 3px solid var(--sign-black);
+      outline: 2px solid var(--sign-white);
+      padding: var(--space-xs) var(--space-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-xs);
+      font-weight: 800;
+      font-size: 0.9375rem;
+      letter-spacing: 0.02em;
+      color: var(--sign-black);
+      text-align: center;
+      transition: opacity var(--dur-short) var(--ease-out);
+    }
+    .panonceau-plate--empty {
+      background: var(--surface-container-low);
+      border: 2px dashed var(--outline-variant);
+      outline: none;
+      color: var(--on-surface-variant);
+      font-weight: 600;
+      font-size: var(--label-size);
+    }
+    .panonceau-plate--invalid {
+      background: var(--error-container);
+      border: 2px solid var(--error);
+      outline: none;
+      color: var(--error);
+      font-weight: 700;
+      font-size: var(--label-size);
+    }
+
+    /* Spatial Trigger Diagram */
+    .scope-diagram {
+      background: var(--background);
+      border: 1px solid var(--outline-variant);
+      padding: var(--space-sm) var(--space-md);
+      display: grid;
+      gap: var(--space-xs);
+    }
+    .scope-diagram-title {
+      font-size: var(--label-size);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--on-surface-variant);
+    }
+
+    /* Panonceau Toggle Controls */
+    .panonceau-controls {
+      display: grid;
+      gap: var(--space-sm);
+    }
+    .panonceau-controls-label {
+      font-size: var(--label-size);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--on-surface);
+    }
+    .panonceau-btn-group {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(130px, 100%), 1fr));
+      gap: var(--space-sm);
+    }
+
+    /* Dynamic Rule Readout */
+    .analysis-panel {
+      display: grid;
+      gap: var(--space-md);
+    }
+    .analysis-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: var(--space-sm);
+    }
+    .inset {
+      border-left: var(--inset-rule);
+      background: var(--surface-container-low);
+      padding: var(--space-md) var(--space-lg);
+      display: grid;
+      gap: var(--space-xs);
+    }
+    .inset--trap {
+      border-left: var(--inset-error-rule);
+      background: var(--background);
+      border-top: 1px solid var(--outline-variant);
+      border-right: 1px solid var(--outline-variant);
+      border-bottom: 1px solid var(--outline-variant);
+    }
+    .inset--positive {
+      border-left: var(--inset-positive-rule);
+      background: var(--positive-container);
+    }
+    .inset--warning {
+      border-left: var(--inset-warning-rule);
+      background: var(--warning-container);
+    }
+    .inset-label {
+      font-size: var(--label-size);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--tertiary);
+    }
+    .inset--trap .inset-label { color: var(--error); }
+    .inset--warning .inset-label { color: var(--warning); }
+    .inset--positive .inset-label { color: var(--positive); }
+
+    .rule-facts {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(165px, 100%), 1fr));
+      gap: var(--space-sm);
+      border-top: 1px solid var(--outline-variant);
+      border-bottom: 1px solid var(--outline-variant);
+      padding: var(--space-sm) 0;
+    }
+    .fact-cell {
+      display: grid;
+      gap: 2px;
+    }
+    .fact-key {
+      font-size: var(--label-size);
+      font-weight: 700;
+      color: var(--on-surface-variant);
+    }
+    .fact-val {
+      font-size: 0.9375rem;
+      font-weight: 700;
+      color: var(--on-surface);
+    }
+
+    .combo-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-md);
+      padding-top: var(--space-xs);
+    }
+
+    /* Section 3: High-Trap Comparison Table & Speed Caps */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-variant-numeric: tabular-nums;
+    }
+    .data-table th {
+      text-align: left;
+      font-weight: 800;
+      font-size: 0.875rem;
+      border-bottom: 2px solid var(--on-surface);
+      padding: var(--space-sm) var(--space-md) var(--space-sm) 0;
+      color: var(--on-surface);
+    }
+    .data-table td {
+      padding: var(--space-sm) var(--space-md) var(--space-sm) 0;
+      border-bottom: 1px solid var(--outline-variant);
+      vertical-align: top;
+      font-size: 0.9375rem;
+    }
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    .comparison-split {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+      gap: var(--space-lg);
+    }
+    .summary-list {
+      display: grid;
+      gap: 0;
+      border-top: 1px solid var(--outline-variant);
+    }
+    .summary-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+      gap: var(--space-md);
+      padding: var(--space-sm) 0;
+      border-bottom: 1px solid var(--outline-variant);
+    }
+    .summary-key { font-weight: 700; }
+    .summary-val { color: var(--on-surface); }
+
+    /* Section 4: ETG Zero-Partial-Credit Trap Drill */
+    .drill-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+      gap: var(--space-lg);
+      align-items: start;
+    }
+    .drill-sidebar {
+      display: grid;
+      gap: var(--space-sm);
+    }
+    .drill-nav-btn {
+      width: 100%;
+      justify-content: space-between;
+    }
+    .drill-card {
+      background: var(--background);
+      border: 2px solid var(--outline);
+      padding: var(--space-lg);
+      display: grid;
+      gap: var(--space-md);
+    }
+    .drill-visual-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-md);
+      background: var(--surface-container-low);
+      padding: var(--space-md);
+      border-left: var(--inset-rule);
+    }
+    .option-list {
+      display: grid;
+      gap: var(--space-sm);
+    }
+    .option-item {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-sm);
+      padding: var(--space-sm) var(--space-md);
+      border: 2px solid var(--outline-variant);
+      background: var(--background);
+      cursor: pointer;
+      min-height: 44px;
+    }
+    .option-item:hover {
+      background: var(--surface-container-low);
+      border-color: var(--on-surface);
+    }
+    .option-item input[type="checkbox"] {
+      width: 22px;
+      height: 22px;
+      margin: 2px 0 0 0;
+      accent-color: var(--primary);
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+    .option-item--correct {
+      border-color: var(--positive);
+      background: var(--positive-container);
+    }
+    .option-item--wrong {
+      border-color: var(--error);
+      background: var(--error-container);
+    }
+
+    /* Footer */
+    .source-footer {
+      border-top: 2px solid var(--on-surface);
+      padding-top: var(--space-md);
+      color: var(--on-surface-variant);
+      font-size: 0.875rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--space-md);
+    }
+
+    /* SVG shared classes (no inline hex colors anywhere in HTML) */
+    .svg-red { fill: var(--sign-red); }
+    .svg-red-stroke { stroke: var(--sign-red); fill: none; }
+    .svg-blue { fill: var(--sign-blue); }
+    .svg-blue-stroke { stroke: var(--sign-blue); fill: none; }
+    .svg-white { fill: var(--sign-white); }
+    .svg-white-stroke { stroke: var(--sign-white); fill: none; }
+    .svg-black { fill: var(--sign-black); }
+    .svg-black-stroke { stroke: var(--sign-black); fill: none; }
+    .svg-amber { fill: var(--sign-amber); }
+    .svg-green { fill: var(--sign-green); }
+    .svg-road { fill: var(--sign-road); }
+    .svg-post { fill: var(--sign-post); }
+
+    @media (max-width: 860px) {
+      .composer-grid { grid-template-columns: 1fr; }
+      .drill-layout { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      .page-grid { padding: var(--space-md); gap: var(--space-lg); }
+      .summary-row { grid-template-columns: 1fr; gap: var(--space-xs); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page-grid">
+    <!-- HEADER -->
+    <header class="header-block">
+      <div class="index-header">
+        <span>Code de la Route (ETG) · Visual Reference &amp; Sub-Panel Lab</span>
+        <span>Exam Rule: 40 Q · 35/40 Pass · 20s / Q · 0 Partial Credit</span>
+      </div>
+      <h1>French Road Signs &amp; Panonceaux</h1>
+      <p class="lead-copy">
+        Identify each sign by shape and color, then attach French sub-panels (<em>panonceaux</em>) to see how distance, extent, vehicle exceptions, and <em>Rappel</em> reminders change where a rule starts, who it binds, and where ETG traps hide.
+      </p>
+
+      <div class="meta-strip">
+        <div class="kpi-tile">
+          <span class="kpi-label">Signs explored</span>
+          <div class="kpi-value" id="kpi-explored">0 / 16</div>
+          <span class="kpi-note">Across all 4 sign shapes</span>
+        </div>
+        <div class="kpi-tile">
+          <span class="kpi-label">Signs marked mastered</span>
+          <div class="kpi-value" id="kpi-mastered">0 / 16</div>
+          <span class="kpi-note">Saved in notebook state</span>
+        </div>
+        <div class="kpi-tile">
+          <span class="kpi-label">ETG trap drill score</span>
+          <div class="kpi-value" id="kpi-drill">0 / 6</div>
+          <span class="kpi-note">Zero partial credit per question</span>
+        </div>
+        <div class="kpi-tile">
+          <span class="kpi-label">Visibility &lt; 50 m rule</span>
+          <div class="kpi-value">50 km/h cap</div>
+          <span class="kpi-note">Front fog OK in rain; rear fog dense fog/snow only</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- SECTION 1: SHAPE & COLOR DECODER -->
+    <section aria-labelledby="sec-1-title">
+      <div class="section-head">
+        <div class="section-kicker"><span class="step-badge">1</span> First-Second Visual Triage</div>
+        <h2 id="sec-1-title">Decode Shape &amp; Color Before Reading the Symbol</h2>
+      </div>
+      <div class="shape-grid" id="shape-decoder-grid">
+        <button type="button" class="shape-card" data-family="danger" aria-pressed="false" onclick="selectFamilyFilter('danger', true)">
+          <div class="shape-card-top">
+            <svg class="shape-thumb" viewBox="0 0 64 64" aria-hidden="true">
+              <polygon points="32,7 59,54 5,54" class="svg-white" stroke="var(--sign-red)" stroke-width="6" stroke-linejoin="round"/>
+              <path d="M32 24 L32 38" class="svg-black-stroke" stroke-width="4" stroke-linecap="round"/>
+              <circle cx="32" cy="45" r="2.5" class="svg-black"/>
+            </svg>
+            <div>
+              <h3>Danger Triangle</h3>
+              <span class="tag tag--warning">Panneau de danger</span>
+            </div>
+          </div>
+          <p class="shape-card-rule"><strong>White triangle, red border:</strong> Warns of a hazard ahead. Slow down and prepare to react.</p>
+          <div class="shape-card-meta">Default trigger: <strong>150 m</strong> rural · <strong>50 m</strong> in town</div>
+        </button>
+
+        <button type="button" class="shape-card" data-family="prohibition" aria-pressed="false" onclick="selectFamilyFilter('prohibition', true)">
+          <div class="shape-card-top">
+            <svg class="shape-thumb" viewBox="0 0 64 64" aria-hidden="true">
+              <circle cx="32" cy="32" r="25" class="svg-white" stroke="var(--sign-red)" stroke-width="7"/>
+              <text x="32" y="39" text-anchor="middle" font-family="Public Sans, sans-serif" font-weight="800" font-size="22" class="svg-black">50</text>
+            </svg>
+            <div>
+              <h3>Prohibition Circle</h3>
+              <span class="tag tag--error">Panneau d’interdiction</span>
+            </div>
+          </div>
+          <p class="shape-card-rule"><strong>White circle, red border:</strong> Forbids an action or caps speed/weight/access. Do not confuse with blue obligation!</p>
+          <div class="shape-card-meta">Default trigger: <strong>Immediately at sign</strong></div>
+        </button>
+
+        <button type="button" class="shape-card" data-family="obligation" aria-pressed="false" onclick="selectFamilyFilter('obligation', true)">
+          <div class="shape-card-top">
+            <svg class="shape-thumb" viewBox="0 0 64 64" aria-hidden="true">
+              <circle cx="32" cy="32" r="26" class="svg-blue"/>
+              <circle cx="32" cy="32" r="23" class="svg-white-stroke" stroke-width="2"/>
+              <path d="M32 45 L32 21 M22 30 L32 20 L42 30" class="svg-white-stroke" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <div>
+              <h3>Obligation Circle</h3>
+              <span class="tag">Panneau d’obligation</span>
+            </div>
+          </div>
+          <p class="shape-card-rule"><strong>Solid blue circle:</strong> Imposes a mandatory direction, lane, minimum speed, or winter equipment.</p>
+          <div class="shape-card-meta">Default trigger: <strong>Immediately at sign</strong></div>
+        </button>
+
+        <button type="button" class="shape-card" data-family="indication" aria-pressed="false" onclick="selectFamilyFilter('indication', true)">
+          <div class="shape-card-top">
+            <svg class="shape-thumb" viewBox="0 0 64 64" aria-hidden="true">
+              <rect x="7" y="7" width="50" height="50" rx="4" class="svg-blue"/>
+              <rect x="10" y="10" width="44" height="44" rx="2" class="svg-white-stroke" stroke-width="2"/>
+              <path d="M32 45 L32 20 M23 29 L32 19 L41 29" class="svg-white-stroke" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <div>
+              <h3>Indication Square</h3>
+              <span class="tag">Panneau d’indication</span>
+            </div>
+          </div>
+          <p class="shape-card-rule"><strong>Blue square or rectangle:</strong> Provides guidance, facility info, or activates special road regimes (Motorway, Zone 20).</p>
+          <div class="shape-card-meta">Default trigger: <strong>At sign or directional</strong></div>
+        </button>
+      </div>
+    </section>
+
+    <!-- SECTION 2: INTERACTIVE SIGN + PANONCEAU COMPOSER -->
+    <section id="composer-section" aria-labelledby="sec-2-title">
+      <div class="section-head">
+        <div class="section-kicker"><span class="step-badge">2</span> Interactive Sign &amp; Panonceau Lab</div>
+        <h2 id="sec-2-title">Select a Sign and Toggle Sub-Panels (<em>Panonceaux</em>)</h2>
+      </div>
+
+      <!-- Filter tabs -->
+      <div class="filter-row" role="group" aria-label="Filter signs by shape and color">
+        <button type="button" class="btn btn--secondary btn--active" data-filter="all" onclick="selectFamilyFilter('all', false)">All 16 signs</button>
+        <button type="button" class="btn btn--secondary" data-filter="danger" onclick="selectFamilyFilter('danger', false)">Danger triangles (4)</button>
+        <button type="button" class="btn btn--secondary" data-filter="prohibition" onclick="selectFamilyFilter('prohibition', false)">Prohibition circles (4)</button>
+        <button type="button" class="btn btn--secondary" data-filter="obligation" onclick="selectFamilyFilter('obligation', false)">Obligation blue circles (4)</button>
+        <button type="button" class="btn btn--secondary" data-filter="indication" onclick="selectFamilyFilter('indication', false)">Indication squares (4)</button>
+      </div>
+
+      <!-- Sign Gallery -->
+      <div class="sign-gallery" id="sign-gallery" role="listbox" aria-label="French road signs"></div>
+
+      <!-- Workbench -->
+      <div class="composer-grid" id="workbench">
+        <!-- Left: Visual Signpost & Panonceau Controls -->
+        <div class="stage-panel">
+          <div class="signpost-stage" aria-live="polite">
+            <div class="signpost-mast signpost-mast--short" aria-hidden="true"></div>
+            <div class="main-sign-frame" id="stage-main-sign"></div>
+            <div class="signpost-mast signpost-mast--short" aria-hidden="true"></div>
+            <div class="panonceau-plate panonceau-plate--empty" id="stage-panonceau">No panonceau attached</div>
+            <div class="signpost-mast" aria-hidden="true"></div>
+          </div>
+
+          <div class="panonceau-controls">
+            <span class="panonceau-controls-label">Toggle sub-panel (<em>Panonceau</em>) beneath this sign:</span>
+            <div class="panonceau-btn-group" id="panonceau-buttons">
+              <button type="button" class="btn btn--secondary btn--active" data-pan="none" onclick="selectPanonceau('none')">Base sign only</button>
+              <button type="button" class="btn btn--secondary" data-pan="distance" onclick="selectPanonceau('distance')">Distance (150 m)</button>
+              <button type="button" class="btn btn--secondary" data-pan="extent" onclick="selectPanonceau('extent')">Extent (sur 2 km)</button>
+              <button type="button" class="btn btn--secondary" data-pan="category" id="btn-pan-category" onclick="selectPanonceau('category')">Category / Condition</button>
+              <button type="button" class="btn btn--secondary" data-pan="rappel" onclick="selectPanonceau('rappel')">Rappel (Reminder)</button>
+            </div>
+          </div>
+
+          <!-- Dynamic Spatial Diagram -->
+          <div class="scope-diagram">
+            <span class="scope-diagram-title">Spatial trigger &amp; legal zone</span>
+            <svg id="spatial-diagram-svg" viewBox="0 0 380 86" width="100%" aria-hidden="true"></svg>
+          </div>
+        </div>
+
+        <!-- Right: Dynamic Rule, Scope, Legal Basis & Exam Trap -->
+        <div class="analysis-panel" aria-live="polite">
+          <div class="analysis-header">
+            <div>
+              <span class="tag" id="detail-family-tag">Family</span>
+              <h3 id="detail-title" style="margin-top: var(--space-xs); font-size: var(--headline-size);">Select a sign</h3>
+              <p id="detail-subtitle" style="color: var(--on-surface-variant); font-size: 0.9375rem;"></p>
+            </div>
+            <span class="tag tag--positive" id="detail-combo-badge">Base Rule</span>
+          </div>
+
+          <!-- Rule to Lock In -->
+          <div class="inset">
+            <span class="inset-label">Rule to Lock In</span>
+            <p id="detail-lock-in" style="font-weight: 700; font-size: var(--subhead-size);"></p>
+          </div>
+
+          <!-- Structured Trigger / End / Scope -->
+          <div class="rule-facts">
+            <div class="fact-cell">
+              <span class="fact-key">Where rule starts</span>
+              <span class="fact-val" id="detail-starts">—</span>
+            </div>
+            <div class="fact-cell">
+              <span class="fact-key">Where rule ends</span>
+              <span class="fact-val" id="detail-ends">—</span>
+            </div>
+            <div class="fact-cell">
+              <span class="fact-key">Who it applies to</span>
+              <span class="fact-val" id="detail-applies">—</span>
+            </div>
+          </div>
+
+          <!-- Legal Interpretation -->
+          <div style="display: grid; gap: var(--space-xs);">
+            <h3>Legal Interpretation &amp; Source Grounding</h3>
+            <p id="detail-legal"></p>
+            <p id="detail-article" style="font-size: 0.875rem; color: var(--on-surface-variant); font-weight: 700;"></p>
+          </div>
+
+          <!-- Exam Trap Callout -->
+          <div class="inset inset--trap">
+            <span class="inset-label">ETG Exam Trap &amp; Multi-Answer Watch</span>
+            <p id="detail-trap"></p>
+          </div>
+
+          <div class="combo-actions">
+            <button type="button" class="btn" id="btn-mastered" onclick="toggleMasteredCurrent()">Mark sign as mastered</button>
+            <span id="mastered-feedback" style="font-size: 0.875rem; color: var(--on-surface-variant);"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: HIGH-TRAP REFERENCE TABLES & ERROR LOG PATTERNS -->
+    <section aria-labelledby="sec-3-title">
+      <div class="section-head">
+        <div class="section-kicker"><span class="step-badge">3</span> High-Risk Distinctions &amp; Speed Caps</div>
+        <h2 id="sec-3-title">Exam Pairs &amp; Speed/Visibility Rules That Override Signs</h2>
+      </div>
+
+      <div class="comparison-split">
+        <div>
+          <h3 style="margin-bottom: var(--space-sm);">Standard Speed Limits &amp; Weather Overrides</h3>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Road / Zone</th>
+                  <th>Dry</th>
+                  <th>Rain / Wet</th>
+                  <th>Key Rule</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Zone de rencontre</strong></td>
+                  <td>20 km/h</td>
+                  <td>20 km/h</td>
+                  <td>Pedestrians have priority on carriageway; bikes two-way</td>
+                </tr>
+                <tr>
+                  <td><strong>Zone 30</strong></td>
+                  <td>30 km/h</td>
+                  <td>30 km/h</td>
+                  <td>Two-way cycling allowed unless signed otherwise</td>
+                </tr>
+                <tr>
+                  <td><strong>Agglomération</strong> (default)</td>
+                  <td>50 km/h</td>
+                  <td>50 km/h</td>
+                  <td>1 m lateral clearance overtaking cyclists/pedestrians</td>
+                </tr>
+                <tr>
+                  <td><strong>Two-way rural road</strong></td>
+                  <td>80 km/h</td>
+                  <td>80 km/h</td>
+                  <td>90 km/h only on signed overtaking sections; 1.5 m clearance</td>
+                </tr>
+                <tr>
+                  <td><strong>Divided expressway</strong></td>
+                  <td>110 km/h</td>
+                  <td>100 km/h</td>
+                  <td>2-second minimum following gap (~2 chevrons)</td>
+                </tr>
+                <tr>
+                  <td><strong>Autoroute (Motorway)</strong></td>
+                  <td>130 km/h</td>
+                  <td>110 km/h</td>
+                  <td>BAU emergencies only (-3 pts); no U-turn/reverse (-4 pts)</td>
+                </tr>
+                <tr>
+                  <td><strong>Visibility &lt; 50 m</strong> (any road)</td>
+                  <td>—</td>
+                  <td><strong>50 km/h</strong></td>
+                  <td>Rear fog light ONLY for dense fog/snow—never rain alone</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div>
+          <h3 style="margin-bottom: var(--space-sm);">Confusable Pairs from Error Log &amp; Glossary</h3>
+          <div class="summary-list">
+            <div class="summary-row">
+              <div class="summary-key">Red-border white circle vs. Blue circle</div>
+              <div class="summary-val">White + red border = <strong>Interdiction</strong> (prohibition). Solid blue circle = <strong>Obligation</strong> (mandatory action).</div>
+            </div>
+            <div class="summary-row">
+              <div class="summary-key">Front vs. Rear fog lights (Entry #001)</div>
+              <div class="summary-val">Heavy rain = <strong>front fog lights only</strong>. Rear fog light is strictly for dense fog or heavy snow (blinds drivers behind in rain).</div>
+            </div>
+            <div class="summary-row">
+              <div class="summary-key">Carrefour à sens giratoire vs. Rond-point</div>
+              <div class="summary-val">Never assume uniform rules: read entry yield signs (<em>Cédez le passage</em>) and interior markings rather than road width.</div>
+            </div>
+            <div class="summary-row">
+              <div class="summary-key">Arrêt vs. Stationnement (Art. R110-2)</div>
+              <div class="summary-val"><em>Arrêt</em> = brief stop for boarding/loading with driver at controls. <em>Stationnement</em> = leaving vehicle parked.</div>
+            </div>
+            <div class="summary-row">
+              <div class="summary-key">Aire de repos vs. Aire de service</div>
+              <div class="summary-val"><em>Aire de repos</em> = parking, picnic, WC (no fuel guaranteed). <em>Aire de service</em> = fuel, food, and maintenance.</div>
+            </div>
+            <div class="summary-row">
+              <div class="summary-key">BAU vs. Voie de détresse</div>
+              <div class="summary-val"><em>BAU</em> = motorway shoulder for emergencies only. <em>Voie de détresse</em> = gravel escape lane strictly for brake failure.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 4: ETG ZERO-PARTIAL-CREDIT TRAP DRILL -->
+    <section aria-labelledby="sec-4-title">
+      <div class="section-head">
+        <div class="section-kicker"><span class="step-badge">4</span> ETG Multi-Answer Trap Drill</div>
+        <h2 id="sec-4-title">Test Yourself Under Zero-Partial-Credit Scoring</h2>
+      </div>
+
+      <div class="drill-layout">
+        <div class="drill-sidebar" id="drill-sidebar" aria-label="Drill questions"></div>
+
+        <div class="drill-card" id="drill-card">
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-sm); align-items: center;">
+            <span class="tag" id="drill-q-theme">Theme</span>
+            <span style="font-size: var(--label-size); font-weight: 700; color: var(--on-surface-variant);" id="drill-q-counter">Question 1 of 6</span>
+          </div>
+
+          <div class="drill-visual-bar" id="drill-visual-bar"></div>
+
+          <h3 id="drill-q-prompt" style="font-size: var(--subhead-size);"></h3>
+          <p style="font-size: 0.875rem; color: var(--on-surface-variant);">Select <strong>all</strong> correct options (1 to 4 may be correct). Missing one or picking one wrong box scores <strong>0 points</strong>.</p>
+
+          <div class="option-list" id="drill-options"></div>
+
+          <div style="display: flex; flex-wrap: wrap; gap: var(--space-sm); align-items: center;">
+            <button type="button" class="btn" id="drill-submit-btn" onclick="submitDrillAnswer()">Check answer</button>
+            <button type="button" class="btn btn--secondary" id="drill-next-btn" onclick="nextDrillQuestion()">Next question</button>
+          </div>
+
+          <div id="drill-feedback" style="display: none;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER & RESET -->
+    <footer class="source-footer">
+      <div>
+        <strong>Sources:</strong> Code Route Error Log, French Driving Exam (ETG), French Road Code Glossary, French-to-English Traffic Glossary, and Code de la route (Partie législative &amp; réglementaire).
+      </div>
+      <div style="display: flex; align-items: center; gap: var(--space-sm);">
+        <span id="reset-status" style="font-size: var(--label-size); color: var(--on-surface-variant);"></span>
+        <button type="button" class="btn btn--secondary" id="btn-reset-state" onclick="handleResetProgress(this)">Reset study progress</button>
+      </div>
+    </footer>
+  </main>
+
+  <api-shim></api-shim>
+  <script>
+    const SIGNS = [
+      {
+        id: `a1-curve`,
+        code: `A1a`,
+        family: `danger`,
+        familyLabel: `Danger Triangle`,
+        name: `Dangerous Curve`,
+        frName: `Virage dangereux`,
+        svgType: `danger_curve`,
+        article: `Art. R413-17 (Reduce speed in curves & poor visibility)`,
+        combos: {
+          none: {
+            panLabel: `Base sign only`,
+            panType: `none`,
+            lockIn: `Slow down before the curve; the bend begins ~150 m ahead outside towns (or ~50 m inside built-up areas).`,
+            starts: `~150 m rural / ~50 m urban`,
+            ends: `Through the curve`,
+            applies: `All vehicles`,
+            legal: `As a triangular danger sign, A1a provides advance warning rather than an instant prohibition. Under Art. R413-17, you must adapt your speed before entering the turn—do not wait until you are inside the bend to brake.`,
+            trap: `ETG Trap: Never assume the hazard starts right at the triangle. Without a distance panonceau, standard advance placement is 150 m outside built-up areas and 50 m inside.`
+          },
+          distance: {
+            panLabel: `150 m`,
+            panText: `150 m`,
+            panType: `distance`,
+            lockIn: `The sharp bend begins at the exact distance shown on the panonceau (150 m ahead), overriding any urban 50 m guess.`,
+            starts: `Exact 150 m ahead`,
+            ends: `Through the curve`,
+            applies: `All vehicles`,
+            legal: `A distance panonceau (M1) pins down the exact distance between the sign and the start of the danger. Even inside an agglomération where default placement is 50 m, 150 m takes precedence.`,
+            trap: `ETG Trap: Watch the two-arrow distinction! Plain "150 m" means distance TO the hazard; "↑ 150 m ↑" means the hazard EXTENDS over 150 m.`
+          },
+          extent: {
+            panLabel: `sur 2 km`,
+            panText: `↑ 2 km ↑`,
+            panType: `extent`,
+            lockIn: `Successive dangerous bends continue over the next 2 km—maintain controlled speed well past the first turn.`,
+            starts: `After initial advance distance`,
+            ends: `2 km along the road`,
+            applies: `All vehicles`,
+            legal: `Upward/downward side arrows (M2 panonceau) transform a single-bend warning into a corridor extent. Combined with Art. R414-11, overtaking is prohibited whenever forward visibility in curves is insufficient.`,
+            trap: `ETG Trap: "A sign with ↑ 2 km ↑ means you only start slowing down after 2 km" — FALSE! Side arrows indicate the length of the hazard zone, not distance before it begins.`
+          },
+          category: {
+            panLabel: `> 3,5 t (Trucks)`,
+            panText: `> 3,5 t`,
+            panType: `category`,
+            panIcon: `truck`,
+            lockIn: `The bend hazard or speed advisory specifically targets vehicles over 3.5 tonnes, though all drivers must still control speed.`,
+            starts: `~150 m rural / ~50 m urban`,
+            ends: `Through the curve`,
+            applies: `Primarily > 3.5 t (high center of gravity)`,
+            legal: `Category panonceaux (M4) narrow who is most affected by the warning—heavy trucks (> 3.5 t) have longer braking distances and rollover risk, and may swing wide across lanes.`,
+            trap: `ETG Trap: Even when a danger sign carries a > 3.5 t panonceau, passenger cars must still watch for heavy vehicles encroaching over the center line in tight curves.`
+          },
+          rappel: {
+            panLabel: `Invalid on Danger signs`,
+            panType: `invalid`,
+            lockIn: `Rappel is NOT used on danger triangles—reminders apply to ongoing prohibitions or limits, not advance hazard warnings.`,
+            starts: `Not applicable`,
+            ends: `Not applicable`,
+            applies: `Invalid pairing`,
+            legal: `Under French signage rules, "Rappel" (M9z) only reminds drivers of an active prohibition or speed/equipment obligation after an intersection or merge. Danger signs always announce something ahead.`,
+            trap: `ETG Trap: If an exam question shows a triangle paired with Rappel, recognize it as an invalid pairing—triangles warn ahead, circles forbid or obligate continuously.`
+          }
+        }
+      },
+      {
+        id: `a17-lights`,
+        code: `A17`,
+        family: `danger`,
+        familyLabel: `Danger Triangle`,
+        name: `Traffic Lights Ahead`,
+        frName: `Annonce de feux tricolores`,
+        svgType: `danger_lights`,
+        article: `Art. R411-25, R412-30 & R412-31 (Signal hierarchy & stops)`,
+        combos: {
+          none: {
+            panLabel: `Base sign only`,
+            panType: `none`,
+            lockIn: `Expect traffic lights 150 m ahead outside towns (50 m inside); working lights override priority signs.`,
+            starts: `~150 m rural / ~50 m urban`,
+            ends: `At the signalized intersection`,
+            applies: `All vehicles`,
+            legal: `Art. R411-25 establishes strict hierarchy: working traffic lights prevail over posted priority signs (like Stop or Cédez le passage), while traffic officers (Art. R411-28) prevail over everything.`,
+            trap: `ETG Trap: Fixed yellow light (Art. R412-31) requires stopping UNLESS you cannot stop safely. Flashing yellow (Art. R412-32) warns of danger and restores standard priority rules.`
+          },
+          distance: {
+            panLabel: `150 m`,
+            panText: `150 m`,
+            panType: `distance`,
+            lockIn: `The traffic-light stop line is exactly 150 m ahead—anticipate braking on high-speed rural approaches.`,
+            starts: `Exact 150 m ahead`,
+            ends: `At the signal stop line`,
+            applies: `All vehicles`,
+            legal: `On 80 km/h roads, reaction distance (~22 m in 1 s) plus braking distance leaves little margin if you spot a red light late. A17 + 150 m alerts you before the intersection comes into view.`,
+            trap: `ETG Trap: Stop at the stop line if painted, or before the pedestrian crossing preceding the light—never block the box between lines (Art. R415-2).`
+          },
+          extent: {
+            panLabel: `sur 500 m`,
+            panText: `↑ 500 m ↑`,
+            panType: `extent`,
+            lockIn: `Multiple signalized intersections occur along the next 500 m—stay alert for successive red lights.`,
+            starts: `After initial advance distance`,
+            ends: `500 m corridor`,
+            applies: `All vehicles`,
+            legal: `Extent arrows indicate a sequence of traffic lights (for example, through a town approach or roadworks corridor). Avoid accelerating sharply between closely spaced signals.`,
+            trap: `ETG Trap: Green light means you may proceed ONLY if the intersection is clear and you will not get stuck blocking cross-traffic (Art. R412-33).`
+          },
+          category: {
+            panLabel: `Cyclistes (M9)`,
+            panText: `Cédez-le-passage cycliste`,
+            panType: `category`,
+            panIcon: `bike`,
+            lockIn: `Watch for cyclists legally proceeding straight or turning right on red where a cyclist yield sub-panel is posted.`,
+            starts: `At the signalized junction`,
+            ends: `Through the intersection`,
+            applies: `All drivers watching cyclists`,
+            legal: `The "Cédez le passage cyclistes" rule lets cyclists cross or turn right at red lights ONLY when their path is clear and without endangering pedestrians.`,
+            trap: `ETG Trap: Do not assume a red light guarantees zero cyclists entering from the right—they still must yield to you when you have green, but stay vigilant.`
+          },
+          rappel: {
+            panLabel: `Invalid on Danger signs`,
+            panType: `invalid`,
+            lockIn: `Rappel is never paired with A17—each signalized intersection is either visible or announced ahead.`,
+            starts: `Not applicable`,
+            ends: `Not applicable`,
+            applies: `Invalid pairing`,
+            legal: `Traffic lights govern discrete junctions rather than continuous speed or access zones, so Rappel does not apply.`,
+            trap: `ETG Trap: Remember the hierarchy: Police agent > Working traffic lights > Priority signs > Priorité à droite.`
+          }
+        }
+      },
+      {
+        id: `ab1-priority`,
+        code: `AB1`,
+        family: `danger`,
+        familyLabel: `Danger Triangle`,
+        name: `Priorité à droite Intersection`,
+        frName: `Intersection — priorité à droite`,
+        svgType: `danger_priority_right`,
+        article: `Art. R415-1 & R415-5 (Intersection approach & yield right)`,
+        combos: {
+          none: {
+            panLabel: `Base sign only`,
+            panType: `none`,
+            lockIn: `Yield to vehicles coming from the right at the upcoming intersection—never assume a wider road has priority.`,
+            starts: `~150 m rural / ~50 m urban`,
+            ends: `After clearing the intersection`,
+            applies: `All vehicles`,
+            legal: `Even if your carriageway is wider or carries heavier traffic, AB1 warns that standard priorité à droite applies. Slow down (Art. R415-1) enough to stop if a vehicle approaches from the right.`,
+            trap: `ETG Trap: Failing to yield right costs a 4th-class fine, up to 3 years license suspension, and 4 penalty points.`
+          },
+          distance: {
+            panLabel: `150 m`,
+            panText: `150 m`,
+            panType: `distance`,
+            lockIn: `The priorité à droite junction is exactly 150 m ahead; check your right mirror and prepare to yield.`,
+            starts: `Exact 150 m ahead`,
+            ends: `At the intersection`,
+            applies: `All vehicles`,
+            legal: `Distance panonceau clarifies exactly where the side road joins from the right, especially where hedges or buildings obscure visibility.`,
+            trap: `ETG Trap: When turning left, you ALSO yield to oncoming traffic on your current road (Art. R415-4) and cyclists on two-way cycle paths.`
+          },
+          extent: {
+            panLabel: `sur 2 km`,
+            panText: `↑ 2 km ↑`,
+            panType: `extent`,
+            lockIn: `Over the next 2 km, intersections may enforce priorité à droite—do not assume you hold priority along the whole stretch.`,
+            starts: `From approach through corridor`,
+            ends: `2 km along the route`,
+            applies: `All vehicles`,
+            legal: `Used on town-entry or rural secondary roads where multiple unmarked or right-priority side streets intersect within 2 km.`,
+            trap: `ETG Trap: Watch for "toujours" or "jamais"—even inside a 2 km corridor, check each junction for a Stop or Cédez le passage marking that overrides the baseline.`
+          },
+          category: {
+            panLabel: `Dirt / Private Exit Note`,
+            panText: `Hors chemin de terre`,
+            panType: `category`,
+            lockIn: `Vehicles exiting private drives, parking lots, or dirt tracks NEVER get priorité à droite (Art. R415-9).`,
+            starts: `At each junction`,
+            ends: `Intersection clear`,
+            applies: `Public paved roadways`,
+            legal: `Under Art. R415-9, drivers crossing a sidewalk or emerging from a parking lot, private access, or earth road (chemin de terre) must yield to ALL road traffic.`,
+            trap: `ETG Trap: On the ETG photo, check whether the road on the right has a curb/trottoir or private gate—if so, they must yield to you!`
+          },
+          rappel: {
+            panLabel: `Invalid on Danger signs`,
+            panType: `invalid`,
+            lockIn: `Rappel is not paired with AB1; use extent arrows (↑ 2 km ↑) when multiple right-priority junctions follow.`,
+            starts: `Not applicable`,
+            ends: `Not applicable`,
+            applies: `Invalid pairing`,
+            legal: `Because each intersection is a discrete event, French signage uses extent arrows or repeated AB1 signs rather than Rappel.`,
+            trap: `ETG Trap: Overtaking is prohibited at non-priority intersections (Art. R414-11) except two-wheelers.`
+          }
+        }
+      },
+      {
+        id: `ab25-roundabout`,
+        code: `AB25`,
+        family: `danger`,
+        familyLabel: `Danger Triangle`,
+        name: `Roundabout Ahead`,
+        frName: `Carrefour à sens giratoire`,
+        svgType: `danger_roundabout`,
+        article: `Art. R415-10 & R412-9 (Giratoire yield & lane positioning)`,
+        combos: {
+          none: {
+            panLabel: `Base sign only`,
+            panType: `none`,
+            lockIn: `Yield at entry to traffic already circulating on the ring; keep right unless turning left or making a U-turn.`,
+            starts: `~150 m rural / ~50 m urban`,
+            ends: `Upon exiting the roundabout`,
+            applies: `All vehicles`,
+            legal: `Under Art. R415-10, any driver entering a carrefour à sens giratoire must yield to users already on the circular carriageway, regardless of road class. Art. R412-9 allows moving to the left lane inside multi-lane rings when taking an exit on the left.`,
+            trap: `ETG Trap: Do not confuse "carrefour à sens giratoire" (yield at entry) with an older "rond-point" (where priorité à droite can apply inside!). Always read the entry sign.`
+          },
+          distance: {
+            panLabel: `150 m`,
+            panText: `150 m`,
+            panType: `distance`,
+            lockIn: `The roundabout entry yield line lies exactly 150 m ahead—drop speed and pick your entry lane early.`,
+            starts: `Exact 150 m ahead`,
+            ends: `Entry yield line`,
+            applies: `All vehicles`,
+            legal: `Giving 150 m distance lets you judge cross-traffic on the ring and select the right lane before the dashed yield line.`,
+            trap: `ETG Trap: At a Cédez le passage (unlike a Stop), you do NOT have to come to a complete halt if the circular carriageway is completely clear.`
+          },
+          extent: {
+            panLabel: `sur 2 km`,
+            panText: `↑ 2 km ↑`,
+            panType: `extent`,
+            lockIn: `Successive roundabouts occur along the next 2 km—expect repeated deceleration and merging.`,
+            starts: `Along the approach`,
+            ends: `2 km corridor`,
+            applies: `All vehicles`,
+            legal: `Common on peri-urban ring roads with closely spaced roundabouts. Every lane change inside a multi-lane roundabout remains subject to priority rules and turn signaling (Art. R412-9).`,
+            trap: `ETG Trap: Never overtake inside a roundabout right before taking an exit across another vehicle's path.`
+          },
+          category: {
+            panLabel: `Véhicules > 3,5 t`,
+            panText: `> 3,5 t`,
+            panType: `category`,
+            panIcon: `truck`,
+            lockIn: `Heavy vehicles (> 3.5 t) may straddle a traversable central island and carry huge blind spots on the right.`,
+            starts: `At roundabout entry & ring`,
+            ends: `Through exit`,
+            applies: `Heavy vehicles & drivers beside them`,
+            legal: `Art. R110-2 allows vehicles whose length makes it indispensable to mount a franchissable central apron. Art. R313-32-1 mandates blind-spot stickers on > 3.5 t vehicles.`,
+            trap: `ETG Trap: Never linger alongside a truck's right flank inside a roundabout—it is in the truck's angle mort while swinging out to exit.`
+          },
+          rappel: {
+            panLabel: `Invalid on Danger signs`,
+            panType: `invalid`,
+            lockIn: `Rappel is not used on AB25—each roundabout has its own entry Cédez le passage sign.`,
+            starts: `Not applicable`,
+            ends: `Not applicable`,
+            applies: `Invalid pairing`,
+            legal: `Roundabouts are discrete intersections governed by entry yield signage.`,
+            trap: `ETG Trap: Always signal right just before your exit so waiting drivers can merge smoothly.`
+          }
+        }
+      },
+      {
+        id: `b14-speed`,
+        code: `B14`,
+        family: `prohibition`,
+        familyLabel: `Prohibition Circle`,
+        name: `Speed Limit (50 km/h)`,
+        frName: `Limitation de vitesse`,
+        svgType: `prohib_50`,
+        article: `Art. R413-1, R413-14 & R413-17 (Max speed & conditions)`,
+        combos: {
+          none: {
+            panLabel: `Base sign only`,
+            panType: `none`,
+            lockIn: `Maximum 50 km/h begins immediately at the sign; white circle with red border = prohibition, NEVER obligation.`,
+            starts: `Immediately at the sign`,
+            ends: `Next intersection or end-of-limit sign`,
+            applies: `All vehicles`,
+            legal: `Entry #002 reminder: Circular white with red border is a panneau d'interdiction (prohibition). You may drive slower when traffic, curves, or visibility require it (Art. R413-17), never faster than 50 km/h.`,
+            trap: `ETG Trap: Do not confuse B14 (white/red border = max speed) with B25 (blue circle = minimum speed). Also remember visibility < 50 m caps speed at 50 km/h everywhere!`
+          },
+          distance: {
+            panLabel: `150 m`,
+            panText: `150 m`,
+            panType: `distance`,
+            lockIn: `The 50 km/h cap does NOT start at the sign—it starts 150 m ahead, giving you space to decelerate.`,
+            starts: `150 m after the sign`,
+            ends: `Next intersection or end sign`,
+            applies: `All vehicles`,
+            legal: `Adding a distance panonceau converts an immediate prohibition into an advance announcement. Use engine braking to reach 50 km/h before passing the actual limit 150 m further.`,
+            trap: `ETG Trap: "I must already be at 50 km/h as I pass this sign with a 150 m panonceau" — FALSE! You must reach 50 km/h within the next 150 m.`
+          },
+          extent: {
+            panLabel: `sur 2 km`,
+            panText: `↑ 2 km ↑`,
+            panType: `extent`,
+            lockIn: `The 50 km/h cap remains active continuously for 2 km—intersections along that stretch do NOT cancel it.`,
+            starts: `Immediately at the sign`,
+            ends: `After 2 km`,
+            applies: `All vehicles`,
+            legal: `Normally a localized speed sign ends at the next intersection, but an extent panonceau (↑ 2 km ↑) locks the limit across the full 2 km segment.`,
+            trap: `ETG Trap: Passing a minor side road inside a "↑ 2 km ↑" section does NOT restore 80 km/h!`
+          },
+          category: {
+            panLabel: `Par temps de pluie / > 3,5 t`,
+            panText: `> 3,5 t`,
+            panType: `category`,
+            panIcon: `truck`,
+            lockIn: `When paired with a truck icon (> 3.5 t) or rain cloud, the cap applies ONLY to that category or weather condition.`,
+            starts: `Immediately at the sign (when condition met)`,
+            ends: `Next intersection or end sign`,
+            applies: `Only vehicles > 3.5 t (or only in rain)`,
+            legal: `Category/weather panonceaux narrow the prohibition. In dry weather or in a standard passenger car (< 3.5 t), a truck-only limit does not restrict you—follow the road's standard limit (and remember rain caps: 130→110 motorway, 110→100 expressway).`,
+            trap: `ETG Trap: Watch for "toujours" or "tous les véhicules"—if a truck or caravan symbol sits beneath B14, passenger cars keep the normal road speed limit.`
+          },
+          rappel: {
+            panLabel: `Rappel`,
+            panText: `RAPPEL`,
+            panType: `rappel`,
+            lockIn: `Reminder of an already active speed limit—you should already be driving at or below 50 km/h.`,
+            starts: `Already in effect before this sign`,
+            ends: `Until zone exit or end sign`,
+            applies: `All vehicles`,
+            legal: `Placed after junctions, highway on-ramps, or along long corridors so entering or continuing drivers cannot claim they missed the initial limit.`,
+            trap: `ETG Trap: Rappel does NOT mean the limit starts 150 m ahead or just began here—it confirms you are already inside the restricted zone.`
+          }
+        }
+      },
+      {
+        id: `b3-no-overtake`,
+        code: `B3`,
+        family: `prohibition`,
+        familyLabel: `Prohibition Circle`,
+        name: `No Overtaking`,
+        frName: `Interdiction de dépasser`,
+        svgType: `prohib_overtake`,
+        article: `Art. R414-4, R414-6 & R414-11 (Overtaking rules)`,
+        combos: {
+          none: {
+            panLabel: `Base sign only`,
+            panType: `none`,
+            lockIn: `Overtaking motor vehicles is forbidden immediately at the sign (two-wheeled vehicles without sidecar remain an exception unless signed otherwise).`,
+            starts: `Immediately at the sign`,
+            ends: `Next intersection or B31 end sign`,
+            applies: `All motor vehicles`,
+            legal: `Prohibits overtaking all motor vehicles other than two-wheelers without a sidecar, provided you do not cross a solid line (except Art. R412-19 allowance to straddle a solid line when safely passing a cyclist/EDPM with 1 m urban / 1.5 m rural clearance).`,
+            trap: `ETG Trap: "I can never overtake a cyclist here" — FALSE! You may pass a cyclist or two-wheeler without sidecar if visibility is clear and lateral clearance (1 m / 1.5 m) is respected.`
+          },
+          distance: {
+            panLabel: `150 m`,
+            panText: `150 m`,
+            panType: `distance`,
+            lockIn: `No-overtaking zone begins 150 m ahead—do not start a long pass you cannot complete before that point.`,
+            starts: `150 m after the sign`,
+            ends: `Next intersection or B31 end sign`,
+            applies: `All motor vehicles`,
+            legal: `Art. R414-4 requires sufficient speed difference to complete an overtake quickly and return right without cutting off or slowing the passed vehicle (Art. R414-10).`,
+            trap: `ETG Trap: If you are already overtaking when you see B3 + 150 m, return cleanly to the right before the 150 m mark.`
+          },
+          extent: {
+            panLabel: `sur 2 km`,
+            panText: `↑ 2 km ↑`,
+            panType: `extent`,
+            lockIn: `Overtaking stays prohibited for the entire 2 km stretch—look for a B31 end-of-prohibition sign or completion of 2 km.`,
+            starts: `Immediately at the sign`,
+            ends: `After 2 km`,
+            applies: `All motor vehicles`,
+            legal: `Used on winding rural roads or blind hills. Note Art. R414-16: if someone begins overtaking you, move right and NEVER accelerate.`,
+            trap: `ETG Trap: Dashed center lines inside a "↑ 2 km ↑" B3 zone still do NOT permit overtaking motor cars—signage prevails over dashed markings for the prohibition.`
+          },
+          category: {
+            panLabel: `> 3,5 t (Trucks only)`,
+            panText: `> 3,5 t`,
+            panType: `category`,
+            panIcon: `truck`,
+            lockIn: `Only vehicles over 3.5 t (B3a equivalent) are barred from overtaking—passenger cars may overtake if safe and legal.`,
+            starts: `Immediately at the sign`,
+            ends: `Next intersection or end sign`,
+            applies: `Only vehicles > 3.5 t`,
+            legal: `Prevents slow elephant-racing between heavy goods vehicles on uphill or dual-carriageway stretches while keeping traffic flowing for light vehicles (< 3.5 t).`,
+            trap: `ETG Trap: Check the vehicle class in the sub-panel! On the ETG, assuming a "> 3,5 t" restriction bans your car costs you the question under zero partial credit.`
+          },
+          rappel: {
+            panLabel: `Rappel`,
+            panText: `RAPPEL`,
+            panType: `rappel`,
+            lockIn: `Reminds drivers that the no-overtaking restriction remains in force.`,
+            starts: `Already in effect`,
+            ends: `Until B31 end sign or zone end`,
+            applies: `All motor vehicles`,
+            legal: `Reinforces an ongoing no-overtaking stretch where drivers might mistakenly think an access road canceled it.`,
+            trap: `ETG Trap: Remember that pedestrians, cyclists, and horse riders still require 1 m clearance in town and 1.5 m outside town (Art. R414-4).`
+          }
+        }
+      },
+      {
+        id: `b0-no-access`,
+        code: `B0`,
+        family: `prohibition`,
+        familyLabel: `Prohibition Circle`,
+        name: `Access Prohibited (Both Ways)`,
+        frName: `Circulation interdite`,
+        svgType: `prohib_access`,
+        article: `Art. R411-17 & R412-28 (Access bans & wrong-way penalties)`,
+        combos: {
+          none: {
+            panLabel: `Base sign only`,
+            panType: `none`,
+            lockIn: `All vehicles are banned from entering this street in both directions immediately at the sign.`,
+            starts: `Immediately at the sign`,
+            ends: `End of restricted street`,
+            applies: `All vehicles (pedestrians may still walk unless signed otherwise)`,
+            legal: `Unlike B1 (Sens interdit, which bans entry from your direction only), B0 white-with-red-border prohibits vehicle circulation in BOTH directions. Ignoring permanent access bans is a 4th-class fine (Art. R411-17).`,
+            trap: `ETG Trap: Do NOT confuse B0 (empty white circle with red border = closed both ways) with B1 (red circle with white bar = one-way wrong direction, -4 points under Art. R412-28).`
+          },
+          distance: {
+            panLabel: `150 m`,
+            panText: `150 m`,
+            panType: `distance`,
+            lockIn: `Road closure / restricted access begins 150 m ahead—take the turning before the barrier.`,
+            starts: `150 m after the sign`,
+            ends: `Restricted zone`,
+            applies: `All vehicles`,
+            legal: `Gives drivers advance warning before reaching a pedestrianized center or closed road segment so they do not have to reverse out.`,
+            trap: `ETG Trap: You may drive up to the 150 m point to turn off, unless local access is barred earlier.`
+          },
+          extent: {
+            panLabel: `sur 200 m`,
+            panText: `↑ 200 m ↑`,
+            panType: `extent`,
+            lockIn: `Circulation is barred along the next 200 m stretch.`,
+            starts: `Immediately at the sign`,
+            ends: `200 m ahead`,
+            applies: `All vehicles`,
+            legal: `Indicates the length of the closed or pedestrian-only section ahead.`,
+            trap: `ETG Trap: Never drive onto a hatched zone (effet de zébra) or sidewalk to bypass a closed street.`
+          },
+          category: {
+            panLabel: `Sauf riverains / cyclistes`,
+            panText: `Sauf riverains`,
+            panType: `category`,
+            panIcon: `bike`,
+            lockIn: `Access is forbidden EXCEPT for residents/deliveries or cyclists—exempted users may appear from either direction.`,
+            starts: `Immediately at the sign`,
+            ends: `End of street`,
+            applies: `All vehicles EXCEPT listed group`,
+            legal: `"Sauf" (except) is the classic French exception panonceau. In ≤ 30 km/h zones (Art. R412-28-1) and where "Sauf cyclistes" appears, bicycles and EDPM ride lawfully inside.`,
+            trap: `ETG Trap: If an ETG statement says "No vehicle may EVER enter this street" (jamais / aucun), check for a "Sauf..." panonceau!`
+          },
+          rappel: {
+            panLabel: `Rappel`,
+            panText: `RAPPEL`,
+            panType: `rappel`,
+            lockIn: `Reminder inside a restricted perimeter that general motor access remains forbidden.`,
+            starts: `Already in effect`,
+            ends: `Zone exit`,
+            applies: `Non-exempt vehicles`,
+            legal: `Used inside large restricted-traffic zones (ZCR, Art. R411-19-1) or pedestrian sectors where side alleys join.`,
+            trap: `ETG Trap: Entering a restricted zone without authorization or Crit'Air identification incurs a 3rd/4th-class fine and possible vehicle immobilization.`
+          }
+        }
+      },
+      {
+        id: `b6d-no-stop`,
+        code: `B6d`,
+        family: `prohibition`,
+        familyLabel: `Prohibition Circle`,
+        name: `No Stopping or Parking`,
+        frName: `Arrêt et stationnement interdits`,
+        svgType: `prohib_no_stop`,
+        article: `Art. R110-2, R417-9 & R417-10 (Stopping vs. parking)`,
+        combos: {
+          none: {
+            panLabel: `Base sign only`,
+            panType: `none`,
+            lockIn: `Neither parking (stationnement) nor brief drop-off stops (arrêt) are allowed AFTER the sign on that side until the next intersection.`,
+            starts: `Immediately AFTER the sign`,
+            ends: `Next intersection`,
+            applies: `All vehicles (right/signed side)`,
+            legal: `Art. R110-2 defines "arrêt" as momentary immobilization to board/alight or load/unload with the driver at the wheel, and "stationnement" as any other stop. B6d (red X) forbids BOTH. Dangerous parking (Art. R417-9) costs 3 points!`,
+            trap: `ETG Trap: Single diagonal slash (B6a1) = No parking, brief arrêt OK. Red X (B6d) = Neither arrêt nor stationnement! And by default, it applies AFTER the sign, not before it.`
+          },
+          distance: {
+            panLabel: `Directional / 150 m`,
+            panText: `150 m`,
+            panType: `distance`,
+            lockIn: `Stopping and parking become prohibited 150 m ahead (or follow directional arrows: ↑ starts, ↓ ends, ↕ both sides).`,
+            starts: `150 m ahead (or arrow-marked)`,
+            ends: `Next intersection or ↓ arrow`,
+            applies: `All vehicles`,
+            legal: `Parking signage frequently uses vertical arrow panonceaux (M8): ↑ means starts here, ↓ means ends here, ↕ means continues before AND after the sign.`,
+            trap: `ETG Trap: A downward arrow (↓) means the restriction ENDS at the sign—meaning you MAY stop/park immediately after it!`
+          },
+          extent: {
+            panLabel: `sur 200 m / ↕`,
+            panText: `↑ 200 m ↑`,
+            panType: `extent`,
+            lockIn: `Stopping and parking are prohibited continuously across the next 200 m.`,
+            starts: `Immediately at the sign`,
+            ends: `200 m ahead`,
+            applies: `All vehicles`,
+            legal: `Locks the restriction across long curbs, bus stops, or bridge/tunnel approaches where stopping is banned (Art. R417-10).`,
+            trap: `ETG Trap: Never stop on hatched markings (zébra), pedestrian crossings, or within sight of traffic lights/signs if your vehicle blocks them (Art. R417-10).`
+          },
+          category: {
+            panLabel: `Sauf livraison / 9h–19h`,
+            panText: `Sauf livraison`,
+            panType: `category`,
+            lockIn: `Stopping/parking is banned EXCEPT for delivery vehicles (or only during posted hours)—check the time window.`,
+            starts: `At the sign (during posted hours)`,
+            ends: `Next intersection`,
+            applies: `All except listed exception / hours`,
+            legal: `Outside the restricted hours or for the exempted category, general rules still apply (no blocking driveways, crossings, or continuous lines under Art. R417-10).`,
+            trap: `ETG Trap: Even when a delivery exception is posted, private cars cannot pause there "just for 30 seconds" to check a phone.`
+          },
+          rappel: {
+            panLabel: `Rappel`,
+            panText: `RAPPEL`,
+            panType: `rappel`,
+            lockIn: `Reminder that stopping and parking remain prohibited along this segment.`,
+            starts: `Already in effect`,
+            ends: `Next intersection or ↓ end sign`,
+            applies: `All vehicles`,
+            legal: `Reaffirms the no-stopping rule along stretches with wide driveways or loading bays.`,
+            trap: `ETG Trap: On motorways/expressways, stopping on the BAU (Art. R412-8) is strictly for absolute emergency—never for rest or phone checks (-3 points).`
+          }
+        }
+      },
+      {
+        id: `b21-direction`,
+        code: `B21-1`,
+        family: `obligation`,
+        familyLabel: `Obligation Blue Circle`,
+        name: `Mandatory Direction`,
+        frName: `Direction obligatoire`,
+        svgType: `oblig_straight`,
+        article: `Art. R412-26 (Mandatory direction fine)`,
+        combos: {
+          none: {
+            panLabel: `Base sign only`,
+            panType: `none`,
+            lockIn: `Solid blue circle = OBLIGATION: you must proceed in the arrow's direction at the next junction.`,
+            starts: `At the sign / next intersection`,
+            ends: `Once past the intersection`,
+            applies: `All vehicles`,
+            legal: `Entry #002 reminder: Circular blue is an obligation, NOT mere advice. Under Art. R412-26, failing to obey a mandatory direction is a 2nd-class fine.`,
+            trap: `ETG Trap: Do NOT confuse B21-1 (round blue circle = mandatory straight ahead) with C12 (square blue sign = one-way street)! On a round blue arrow, turning left or right is forbidden.`
+          },
+          distance: {
+            panLabel: `150 m`,
+            panText: `150 m`,
+            panType: `distance`,
+            lockIn: `Mandatory direction takes effect at the junction 150 m ahead—you may still turn into driveways before 150 m.`,
+            starts: `At 150 m intersection`,
+            ends: `Past that intersection`,
+            applies: `All vehicles`,
+            legal: `Alerts drivers early so they can position in the required lane before reaching a complex or bus-gated intersection.`,
+            trap: `ETG Trap: Distinguish "obligation" (round) from "indication" (square) at first glance by shape alone.`
+          },
+          extent: {
+            panLabel: `sur 500 m`,
+            panText: `↑ 500 m ↑`,
+            panType: `extent`,
+            lockIn: `Mandatory straight-only / lane rule holds along the 500 m corridor.`,
+            starts: `Immediately at the sign`,
+            ends: `500 m ahead`,
+            applies: `All vehicles`,
+            legal: `Used along channelized corridors or median-separated stretches where turns are barred across multiple blocks.`,
+            trap: `ETG Trap: Even if a side alley appears unobstructed, an active B21 obligation bars turning into it.`
+          },
+          category: {
+            panLabel: `Sauf bus / cyclistes`,
+            panText: `Sauf bus`,
+            panType: `category`,
+            panIcon: `bike`,
+            lockIn: `You must follow the mandatory direction, but exempted buses or cyclists may turn across your path!`,
+            starts: `At the sign / intersection`,
+            ends: `Past the intersection`,
+            applies: `All EXCEPT buses / cyclists`,
+            legal: `Exempts public transit or cyclists from the mandatory direction—check blind spots and mirrors before accelerating straight through.`,
+            trap: `ETG Trap: Never assume oncoming or adjacent cyclists/buses are bound by your B21 arrow when "Sauf..." sits underneath.`
+          },
+          rappel: {
+            panLabel: `Not typical on single turn`,
+            panType: `invalid`,
+            lockIn: `Single-junction mandatory arrows are repeated as fresh B21 signs at each junction rather than with Rappel.`,
+            starts: `Not applicable`,
+            ends: `Not applicable`,
+            applies: `Invalid pairing`,
+            legal: `Obligation signs like minimum speed (B25) or cycle tracks (B22a) use Rappel; single intersection direction signs are placed directly at each decision point.`,
+            trap: `ETG Trap: Round blue = mandatory; square blue = informational/one-way guidance.`
+          }
+        }
+      },
+      {
+        id: `b22a-cycle`,
+        code: `B22a`,
+        family: `obligation`,
+        familyLabel: `Obligation Blue Circle`,
+        name: `Mandatory Cycle Track`,
+        frName: `Piste ou bande cyclable obligatoire`,
+        svgType: `oblig_cycle`,
+        article: `Art. R110-2, R412-7, R415-14 & R417-10 (Cycle lane rules)`,
+        combos: {
+          none: {
+            panLabel: `Base sign only`,
+            panType: `none`,
+            lockIn: `Cyclists MUST use this track; motor vehicles are forbidden to drive, stop, or park on it and must yield when turning across it.`,
+            starts: `Immediately at the sign`,
+            ends: `End sign (B40) or junction`,
+            applies: `Cyclists & EDPM (mandatory); Motorists (barred)`,
+            legal: `Under Art. R415-14, a cycle track alongside a road counts as a lane of that carriageway for priority rules. Art. R415-3/R415-4 require turning drivers to yield to cyclists moving in BOTH directions on intersecting tracks.`,
+            trap: `ETG Trap: Driving or parking on a reserved cycle lane triggers a 4th-class fine (Art. R412-7) and very-inconvenient parking penalties (Art. R417-10).`
+          },
+          distance: {
+            panLabel: `150 m`,
+            panText: `150 m`,
+            panType: `distance`,
+            lockIn: `The mandatory cycle lane begins 150 m ahead; motorists must merge left out of the curb lane before then.`,
+            starts: `150 m ahead`,
+            ends: `At B40 end sign`,
+            applies: `Cyclists & Motorists`,
+            legal: `Warns drivers before a general right lane narrows or converts into a dedicated cycle track.`,
+            trap: `ETG Trap: When overtaking a cyclist on a road without a separator, maintain at least 1 m in town and 1.5 m outside town (Art. R414-4).`
+          },
+          extent: {
+            panLabel: `sur 2 km`,
+            panText: `↑ 2 km ↑`,
+            panType: `extent`,
+            lockIn: `The mandatory cycle track runs continuously for 2 km; stay vigilant at every driveway and right turn.`,
+            starts: `Immediately at the sign`,
+            ends: `After 2 km`,
+            applies: `Cyclists & Motorists`,
+            legal: `Highlights a continuous 2 km cycle corridor where motorists crossing into side streets must check shoulder/blind-spot angles for fast bikes or e-scooters (EDPM).`,
+            trap: `ETG Trap: Remember EDPM (electric scooters up to 25 km/h per Art. R311-1) share cycle lanes and tracks.`
+          },
+          category: {
+            panLabel: `Double sens cyclable`,
+            panText: `Double sens`,
+            panType: `category`,
+            panIcon: `bike`,
+            lockIn: `Cyclists travel in BOTH directions on this track—look both ways before turning across it!`,
+            starts: `Immediately at the sign`,
+            ends: `Track end`,
+            applies: `Two-way cyclists & all crossing drivers`,
+            legal: `Reinforces Art. R415-3 and R415-4: turning vehicles must yield to cycles and EDPM circulating in BOTH directions on cycle tracks.`,
+            trap: `ETG Trap: Looking only behind you when turning right across a cycle track misses cyclists legally approaching head-on.`
+          },
+          rappel: {
+            panLabel: `Rappel`,
+            panText: `RAPPEL`,
+            panType: `rappel`,
+            lockIn: `Reminds cyclists and motorists after an intersection that the cycle track remains mandatory and motor-free.`,
+            starts: `Already in effect`,
+            ends: `Until B40 end sign`,
+            applies: `Cyclists & Motorists`,
+            legal: `Prevents motorists turning onto the street from treating the cycle track as a parking strip or turn lane.`,
+            trap: `ETG Trap: Crossing a reserved lane's line is only allowed when exiting/entering the roadway if markings permit (Art. R412-23).`
+          }
+        }
+      },
+      {
+        id: `b25-minspeed`,
+        code: `B25`,
+        family: `obligation`,
+        familyLabel: `Obligation Blue Circle`,
+        name: `Minimum Speed (30 km/h)`,
+        frName: `Vitesse minimale obligatoire`,
+        svgType: `oblig_min30`,
+        article: `Art. R413-17 & R432-5 (Minimum speed vs. safety)`,
+        combos: {
+          none: {
+            panLabel: `Base sign only`,
+            panType: `none`,
+            lockIn: `Blue circle with white number = MINIMUM speed (at least 30 km/h), UNLESS traffic, weather, or hazards force slower driving.`,
+            starts: `Immediately at the sign`,
+            ends: `End sign (B43) or exit`,
+            applies: `All motor vehicles able to reach it`,
+            legal: `Keeps slow traffic from creating rear-end hazards on climbs or tunnels. However, Art. R413-17 always overrides: you must NEVER maintain minimum speed in dense fog, congestion, or icy conditions.`,
+            trap: `ETG Trap: Classic "toujours" trap! "You must ALWAYS drive at least 30 km/h here" is FALSE—safety and weather always come first.`
+          },
+          distance: {
+            panLabel: `150 m`,
+            panText: `150 m`,
+            panType: `distance`,
+            lockIn: `The minimum speed requirement begins 150 m ahead (e.g. entering a fast tunnel or expressway lane).`,
+            starts: `150 m ahead`,
+            ends: `B43 end sign`,
+            applies: `All vehicles`,
+            legal: `Gives slow or heavy vehicles 150 m to accelerate or move into a slow-vehicle lane (voie pour véhicules lents) before the minimum speed begins.`,
+            trap: `ETG Trap: Vehicles at the end of a slow-vehicle lane must yield to general-lane traffic when merging back (Art. R422-2).`
+          },
+          extent: {
+            panLabel: `sur 2 km`,
+            panText: `↑ 2 km ↑`,
+            panType: `extent`,
+            lockIn: `Maintain at least 30 km/h across the next 2 km whenever road conditions allow.`,
+            starts: `Immediately at the sign`,
+            ends: `After 2 km`,
+            applies: `All vehicles`,
+            legal: `Used on long motorway climbs or bridges to prevent bottlenecks.`,
+            trap: `ETG Trap: Remember Entry #002—solid blue circle = obligation (minimum), white with red border = prohibition (maximum).`
+          },
+          category: {
+            panLabel: `Voie de gauche`,
+            panText: `Voie de gauche`,
+            panType: `category`,
+            lockIn: `Minimum speed applies ONLY to the leftmost lane—slow vehicles must stay in the right lane.`,
+            starts: `Immediately in left lane`,
+            ends: `B43 end sign`,
+            applies: `Left-lane traffic only`,
+            legal: `Mirrors the motorway principle (Art. R432-5 references the 80 km/h left-lane minimum on motorways in normal traffic). Keep right in normal driving (Art. R412-9).`,
+            trap: `ETG Trap: Do not linger in the left lane below the minimum speed—return to the right lane after overtaking.`
+          },
+          rappel: {
+            panLabel: `Rappel`,
+            panText: `RAPPEL`,
+            panType: `rappel`,
+            lockIn: `Reminds drivers already in the corridor that the minimum speed remains active.`,
+            starts: `Already in effect`,
+            ends: `B43 end sign`,
+            applies: `All vehicles`,
+            legal: `Reaffirms minimum speed after an entry ramp joins the main carriageway.`,
+            trap: `ETG Trap: Merging traffic on an acceleration lane (voie d'insertion) always yields to vehicles already on the main carriageway.`
+          }
+        }
+      },
+      {
+        id: `b26-chains`,
+        code: `B26`,
+        family: `obligation`,
+        familyLabel: `Obligation Blue Circle`,
+        name: `Snow Chains Mandatory`,
+        frName: `Chaînes à neige obligatoires`,
+        svgType: `oblig_chains`,
+        article: `Art. R413-17 & Mountain equipment rules`,
+        combos: {
+          none: {
+            panLabel: `Base sign only`,
+            panType: `none`,
+            lockIn: `Snow chains are mandatory on at least driving wheels immediately from the sign—stop in a safe bay before entering.`,
+            starts: `Immediately at the sign`,
+            ends: `B44 end sign`,
+            applies: `All motor vehicles`,
+            legal: `Without a "Pneus neige admis" panonceau, winter tires alone are NOT enough when B26 is posted—you must mount chains.`,
+            trap: `ETG Trap: "Winter tires are always accepted instead of chains under B26" — FALSE! Only when the "Pneus neige admis" sub-panel is present.`
+          },
+          distance: {
+            panLabel: `150 m`,
+            panText: `150 m`,
+            panType: `distance`,
+            lockIn: `Mandatory chain zone starts 150 m ahead—pull into the chaining bay before reaching the B26 line.`,
+            starts: `150 m ahead`,
+            ends: `B44 end sign`,
+            applies: `All motor vehicles`,
+            legal: `Allows drivers to safely pull off the travel lane to fit chains rather than stopping dangerously on the carriageway (Art. R417-9).`,
+            trap: `ETG Trap: If stopping on the roadside in poor visibility, wear your high-visibility vest and place the warning triangle (Art. R231-1 / R416-19).`
+          },
+          extent: {
+            panLabel: `sur 5 km`,
+            panText: `↑ 5 km ↑`,
+            panType: `extent`,
+            lockIn: `Chains remain mandatory for the next 5 km mountain climb or pass.`,
+            starts: `Immediately at the sign`,
+            ends: `After 5 km`,
+            applies: `All motor vehicles`,
+            legal: `Signals the length of the snow-bound ascent so drivers prepare for reduced speed and much longer braking distances on ice/snow.`,
+            trap: `ETG Trap: Braking distance grows with the square of speed AND worsens dramatically on snow/ice—leave far more than the dry 2-second gap.`
+          },
+          category: {
+            panLabel: `Pneus neige admis`,
+            panText: `Pneus neige admis`,
+            panType: `category`,
+            lockIn: `Snow/winter tires ARE accepted here as a legal alternative to fitting snow chains.`,
+            starts: `Immediately at the sign`,
+            ends: `B44 end sign`,
+            applies: `All vehicles (chains OR winter tires)`,
+            legal: `Relaxes the strict chain mandate for vehicles equipped with compliant winter tires, while still requiring unequipped cars to fit chains.`,
+            trap: `ETG Trap: Read the panonceau word-for-word—do not confuse "Pneus neige admis" (allowed) with "Chaînes obligatoires" alone.`
+          },
+          rappel: {
+            panLabel: `Rappel`,
+            panText: `RAPPEL`,
+            panType: `rappel`,
+            lockIn: `Reminds drivers after a mountain stop or side junction that snow equipment remains mandatory.`,
+            starts: `Already in effect`,
+            ends: `B44 end sign`,
+            applies: `All motor vehicles`,
+            legal: `Prevents drivers leaving a ski resort parking lot from removing chains prematurely before the B44 end-of-obligation sign.`,
+            trap: `ETG Trap: Remember rear fog lights ARE permitted in heavy snow (unlike rain alone, where they blind following drivers!).`
+          }
+        }
+      },
+      {
+        id: `c207-motorway`,
+        code: `C207`,
+        family: `indication`,
+        familyLabel: `Indication Square`,
+        name: `Motorway Entry`,
+        frName: `Entrée d'autoroute`,
+        svgType: `indic_motorway`,
+        article: `Art. R421-1 to R421-8 & R412-8 (Motorway legal regime)`,
+        combos: {
+          none: {
+            panLabel: `Base sign only`,
+            panType: `none`,
+            lockIn: `Motorway rules apply immediately (including on ramps): 130 km/h dry / 110 km/h rain, BAU for emergencies only, no U-turns.`,
+            starts: `Immediately at the sign (and ramp)`,
+            ends: `C208 End of Motorway sign`,
+            applies: `Authorized motor vehicles only`,
+            legal: `Art. R421-1 extends motorway rules to connecting ramps (bretelles). Art. R421-2 bans pedestrians, animals, bicycles, mopeds, tractors, and unregistered vehicles. Stopping on the BAU (Art. R412-8) costs 3 points; U-turn/reversing (Art. R421-6) costs 4 points.`,
+            trap: `ETG Trap: In rain (précipitations), motorway max drops from 130 to 110 km/h—and in heavy rain, front fog lights are permitted, NEVER the rear fog light alone (Entry #001)!`
+          },
+          distance: {
+            panLabel: `150 m / 1000 m`,
+            panText: `150 m`,
+            panType: `distance`,
+            lockIn: `Motorway begins 150 m ahead—last chance for bicycles, mopeds, and tractors to exit before banned access begins.`,
+            starts: `150 m ahead`,
+            ends: `C208 End of Motorway`,
+            applies: `All road users approaching`,
+            legal: `Alerts banned categories (Art. R421-2) before they enter a no-exit slip road where reversing is illegal (Art. R421-6).`,
+            trap: `ETG Trap: If you miss an exit on a motorway, NEVER reverse or cross the central median (Art. R421-5/R421-6)—continue to the next interchange.`
+          },
+          extent: {
+            panLabel: `Bifurcation / Exit`,
+            panText: `Sortie 2 km`,
+            panType: `extent`,
+            lockIn: `Position into the exit or branch lane before reaching the sign at the start of the bifurcation (Art. R421-4).`,
+            starts: `Before bifurcation marker`,
+            ends: `At exit ramp`,
+            applies: `Exiting / branching vehicles`,
+            legal: `Art. R421-4 requires changing to the appropriate right/left lane as soon as the exit is announced and completing the move before reaching the ramp-start signs.`,
+            trap: `ETG Trap: Keep at least 2 seconds (two highway chevrons) behind the vehicle ahead on motorways (Art. R412-12).`
+          },
+          category: {
+            panLabel: `Péage / > 3,5 t`,
+            panText: `Péage`,
+            panType: `category`,
+            lockIn: `Toll barrier or heavy-vehicle lane rule ahead; registered owner is financially liable for unpaid tolls (Art. L121-2).`,
+            starts: `At toll plaza / signed lane`,
+            ends: `After toll barrier`,
+            applies: `All motorway users`,
+            legal: `Under Art. L121-2, the registration certificate holder is pecuniarily liable for toll and parking fines unless force majeure or driver identification is shown.`,
+            trap: `ETG Trap: Remember Aire de repos (parking/picnic/WC, no fuel guaranteed) vs. Aire de service (fuel, food, vehicle services).`
+          },
+          rappel: {
+            panLabel: `Invalid on C207`,
+            panType: `invalid`,
+            lockIn: `Motorway status stays active until the crossed C208 End-of-Motorway sign—speed limits use B14 + Rappel instead.`,
+            starts: `Not applicable`,
+            ends: `Not applicable`,
+            applies: `Invalid pairing`,
+            legal: `C207 marks a network boundary rather than a temporary restriction, so Rappel is used on speed signs (B14), not C207.`,
+            trap: `ETG Trap: Probationary license holders (Art. L223-1, R413-5) are capped at 110 km/h on motorways even in dry weather!`
+          }
+        }
+      },
+      {
+        id: `c26a-escape`,
+        code: `C26a`,
+        family: `indication`,
+        familyLabel: `Indication Square`,
+        name: `Emergency Escape Lane`,
+        frName: `Voie de détresse`,
+        svgType: `indic_escape`,
+        article: `French Road Code Glossary (Voie de détresse)`,
+        combos: {
+          none: {
+            panLabel: `Base sign only`,
+            panType: `none`,
+            lockIn: `Gravel/sand deceleration lane strictly for vehicles with brake failure—NEVER stop, park, or rest here.`,
+            starts: `Immediately at the escape bay`,
+            ends: `End of gravel arrestor bed`,
+            applies: `Brake-failure emergencies only`,
+            legal: `Marked with red-and-white checkered striping to grab attention on steep mountain descents. Blocking an escape lane endangers runaway heavy vehicles.`,
+            trap: `ETG Trap: "Can I pull onto a voie de détresse to take a phone call or fix a flat tire?" — NEVER! It is strictly for brake failure.`
+          },
+          distance: {
+            panLabel: `150 m`,
+            panText: `150 m`,
+            panType: `distance`,
+            lockIn: `Emergency escape bay lies 150 m ahead on the right—prepare to steer in if brakes overheat/fail.`,
+            starts: `150 m ahead`,
+            ends: `Escape bay`,
+            applies: `Descending traffic`,
+            legal: `Advance warning lets a driver experiencing brake fade plan a controlled entry rather than swerving abruptly at the last second.`,
+            trap: `ETG Trap: On steep mountain descents, use low gears (engine braking) rather than riding the service brakes.`
+          },
+          extent: {
+            panLabel: `Steep descent corridor`,
+            panText: `↑ 2 km ↑`,
+            panType: `extent`,
+            lockIn: `Descent corridor with escape bays over the next 2 km; test brakes lightly and downshift early.`,
+            starts: `Along descent`,
+            ends: `2 km downgrade`,
+            applies: `All descending vehicles`,
+            legal: `On steep mountain roads where passing is tight, Art. R414-3 dictates that the descending vehicle must stop first to let climbing traffic pass.`,
+            trap: `ETG Trap: Watch Art. R414-3 reversing rule on steep narrow roads: a single vehicle reverses before a vehicle combination!`
+          },
+          category: {
+            panLabel: `> 3,5 t (Heavy vehicles)`,
+            panText: `> 3,5 t`,
+            panType: `category`,
+            panIcon: `truck`,
+            lockIn: `Highlights acute brake-fade risk for > 3.5 t trucks; passenger cars must still NEVER block the lane.`,
+            starts: `At escape bay`,
+            ends: `End of arrestor bed`,
+            applies: `Heavy goods vehicles (and all drivers keeping clear)`,
+            legal: `Heavy loads generate extreme brake heat on long grades; keeping the escape lane unobstructed is critical.`,
+            trap: `ETG Trap: Never confuse a Voie de détresse (brake failure) with an Aire de repos (rest/picnic) or BAU.`
+          },
+          rappel: {
+            panLabel: `Invalid on C26a`,
+            panType: `invalid`,
+            lockIn: `Escape lanes are discrete emergency bays, not continuous legal zones, so Rappel does not apply.`,
+            starts: `Not applicable`,
+            ends: `Not applicable`,
+            applies: `Invalid pairing`,
+            legal: `Each bay is individually signed with advance distance and right-hand bay markers.`,
+            trap: `ETG Trap: Only use hazard lights (Art. R416-18) when forced to drive unusually slowly or immobilized in danger.`
+          }
+        }
+      },
+      {
+        id: `c12-oneway`,
+        code: `C12`,
+        family: `indication`,
+        familyLabel: `Indication Square`,
+        name: `One-Way Street`,
+        frName: `Circulation à sens unique`,
+        svgType: `indic_oneway`,
+        article: `Art. R412-28, R412-28-1 & R415-4 (One-way & two-way bikes)`,
+        combos: {
+          none: {
+            panLabel: `Base sign only`,
+            panType: `none`,
+            lockIn: `Square blue arrow = one-way street ahead (NOT mandatory straight-only at a junction); you may hug the left curb when turning left.`,
+            starts: `Immediately at the sign`,
+            ends: `Next intersection or end of one-way`,
+            applies: `Motorized traffic`,
+            legal: `Art. R415-4 lets you position on the left of a one-way street before turning left. Remember Entry #002 / shape rule: square C12 means one-way street, whereas round blue B21-1 means mandatory straight direction!`,
+            trap: `ETG Trap: In streets ≤ 30 km/h (Art. R412-28-1), cyclists and EDPM can legally ride BOTH WAYS even on a one-way street unless excluded!`
+          },
+          distance: {
+            panLabel: `150 m`,
+            panText: `150 m`,
+            panType: `distance`,
+            lockIn: `The one-way street segment begins 150 m ahead.`,
+            starts: `150 m ahead`,
+            ends: `Junction ahead`,
+            applies: `All traffic`,
+            legal: `Notifies approaching drivers that after the next point, all lanes flow in one direction.`,
+            trap: `ETG Trap: Reversing or making a U-turn against a one-way street is a serious violation.`
+          },
+          extent: {
+            panLabel: `sur 300 m`,
+            panText: `↑ 300 m ↑`,
+            panType: `extent`,
+            lockIn: `One-way circulation extends for 300 m—watch out for two-way street resumption at the end.`,
+            starts: `Immediately at the sign`,
+            ends: `300 m ahead`,
+            applies: `Motorized traffic`,
+            legal: `Prepares drivers for a transition back to two-way traffic after 300 m so they do not stay on the left side after the one-way ends.`,
+            trap: `ETG Trap: Once two-way traffic resumes, Art. R412-9 requires keeping near the right edge of the roadway.`
+          },
+          category: {
+            panLabel: `Sauf cyclistes (Two-way bikes)`,
+            panText: `Sauf cyclistes`,
+            panType: `category`,
+            panIcon: `bike`,
+            lockIn: `Cyclists and EDPM ride AGAINST your one-way flow—keep right, leave passing room, and check both directions when turning!`,
+            starts: `Immediately at the sign`,
+            ends: `End of one-way`,
+            applies: `All drivers (expect oncoming cyclists)`,
+            legal: `Matches Art. R412-28-1 (two-way cycling on ≤ 30 km/h roads). Never hug the far-left curb blindly if an oncoming cycle lane is marked there.`,
+            trap: `ETG Trap: "On a one-way street, traffic can NEVER come toward me" — FALSE! Look for "Sauf cyclistes" or Zone 30 / Zone de rencontre rules.`
+          },
+          rappel: {
+            panLabel: `Invalid on C12`,
+            panType: `invalid`,
+            lockIn: `One-way streets repeat C12 at each side-street junction rather than using Rappel.`,
+            starts: `Not applicable`,
+            ends: `Not applicable`,
+            applies: `Invalid pairing`,
+            legal: `Side-street drivers see a "Sens tournant" or B1 wrong-way sign paired with C12 on the main axis.`,
+            trap: `ETG Trap: On a one-way street with multiple lanes where traffic forms continuous queues, stay in your lane (Art. R412-24).`
+          }
+        }
+      },
+      {
+        id: `b52-rencontre`,
+        code: `B52`,
+        family: `indication`,
+        familyLabel: `Indication Square`,
+        name: `Zone de Rencontre (20 km/h)`,
+        frName: `Entrée de zone de rencontre`,
+        svgType: `indic_rencontre`,
+        article: `Art. R110-2 & R411-3-1 (Shared street: 20 km/h & pedestrian priority)`,
+        combos: {
+          none: {
+            panLabel: `Base sign only`,
+            panType: `none`,
+            lockIn: `Max 20 km/h, pedestrians may walk on the road and have priority over ALL vehicles, and cyclists/EDPM ride two-way.`,
+            starts: `Immediately at zone entry sign`,
+            ends: `Zone de rencontre exit sign (B53)`,
+            applies: `All road users`,
+            legal: `Under Art. R110-2, pedestrians are permitted on the carriageway (without loitering/stationner) and hold priority over vehicles (except trams where applicable). All streets in the zone are two-way for cyclists, light cyclomobiles, and EDPM.`,
+            trap: `ETG Trap: Do NOT confuse Zone de rencontre (20 km/h + pedestrian road priority) with Zone 30 (30 km/h, pedestrians use sidewalks/crossings) or Aire piétonne (walking pace only, restricted vehicle access)!`
+          },
+          distance: {
+            panLabel: `150 m`,
+            panText: `150 m`,
+            panType: `distance`,
+            lockIn: `The 20 km/h Zone de rencontre begins 150 m ahead—drop speed well before crossing the zone threshold.`,
+            starts: `150 m ahead`,
+            ends: `Until B53 exit sign`,
+            applies: `All vehicles`,
+            legal: `Unlike isolated speed signs, a Zone de rencontre holds across every street inside the perimeter until you pass the grey-crossed exit sign (B53).`,
+            trap: `ETG Trap: Intersections INSIDE a Zone de rencontre do NOT cancel the 20 km/h limit!`
+          },
+          extent: {
+            panLabel: `Zone-wide (until exit)`,
+            panText: `Zone entière`,
+            panType: `extent`,
+            lockIn: `Zone rules remain active across ALL streets and intersections until the B53 exit sign.`,
+            starts: `At zone entry`,
+            ends: `At B53 exit sign`,
+            applies: `All road users inside perimeter`,
+            legal: `Art. R411-3-1 requires coherent street design matching the 20 km/h speed limit throughout the zone.`,
+            trap: `ETG Trap: Failing to yield to a pedestrian (Art. R415-11) triggers an automatic 6-point deduction!`
+          },
+          category: {
+            panLabel: `Double sens cyclable`,
+            panText: `Double sens cycliste`,
+            panType: `category`,
+            panIcon: `bike`,
+            lockIn: `Cyclists and EDPM ride in BOTH directions by law across all Zone de rencontre streets.`,
+            starts: `At zone entry`,
+            ends: `At zone exit`,
+            applies: `All drivers, cyclists & EDPM`,
+            legal: `Art. R110-2 makes two-way cycling and EDPM circulation automatic throughout every Zone de rencontre unless locally restricted.`,
+            trap: `ETG Trap: Watch for silent e-scooters (EDPM) approaching from either direction at every corner.`
+          },
+          rappel: {
+            panLabel: `Rappel`,
+            panText: `RAPPEL`,
+            panType: `rappel`,
+            lockIn: `Reminds drivers inside a multi-block shared area that 20 km/h and pedestrian priority still apply.`,
+            starts: `Already inside the zone`,
+            ends: `At B53 exit sign`,
+            applies: `All road users`,
+            legal: `Used inside large town-center zones so drivers emerging from side garages remember they are still inside a Zone de rencontre.`,
+            trap: `ETG Trap: Outside a Zone de rencontre, overtaking pedestrians/cyclists requires at least 1 m clearance in town and 1.5 m outside town (Art. R414-4).`
+          }
+        }
+      }
+    ];
+
+    const DRILLS = [
+      {
+        id: `d1`,
+        theme: `Visibilité & Éclairage · Entry #001`,
+        signId: `c207-motorway`,
+        panType: `none`,
+        prompt: `You are driving on a motorway (autoroute) during heavy rain with reduced visibility, but there is NO fog or snow. Which statements are correct?`,
+        options: [
+          { id: `A`, text: `You may turn on your front fog lights (feux de brouillard avant) in addition to or with low beams.`, correct: true },
+          { id: `B`, text: `You must turn on your rear fog light (feu de brouillard arrière) so drivers behind see you better.`, correct: false },
+          { id: `C`, text: `Your maximum legal speed drops from 130 km/h to 110 km/h due to rain (précipitations).`, correct: true },
+          { id: `D`, text: `If visibility falls below 50 m, your speed is capped at 50 km/h.`, correct: true }
+        ],
+        explanation: `Correct: A, C, and D. Front fog lights are permitted in heavy rain, motorway limits drop to 110 km/h in rain, and visibility under 50 m caps speed at 50 km/h everywhere. B is a classic trap (Error Log Entry #001): the rear fog light is strictly for dense fog or heavy snow—never rain alone, because it blinds following drivers.`
+      },
+      {
+        id: `d2`,
+        theme: `Signalisation · Entry #002`,
+        signId: `b14-speed`,
+        panType: `rappel`,
+        prompt: `You pass a circular sign with a WHITE background and a RED border showing "50", with a "RAPPEL" panonceau underneath. What is true?`,
+        options: [
+          { id: `A`, text: `It is a panneau d'interdiction (prohibition sign), not an obligation sign.`, correct: true },
+          { id: `B`, text: `It reminds you that a 50 km/h speed limit is already active on this road.`, correct: true },
+          { id: `C`, text: `It means you must drive at least 50 km/h.`, correct: false },
+          { id: `D`, text: `The 50 km/h limit begins 150 m after this sign.`, correct: false }
+        ],
+        explanation: `Correct: A and B. White circle + red border = interdiction (Entry #002), whereas minimum speed is a solid blue circle (obligation). "Rappel" reminds you of an already ongoing limit—it never delays the start by 150 m.`
+      },
+      {
+        id: `d3`,
+        theme: `Panonceaux · Distance vs. Extent`,
+        signId: `a1-curve`,
+        panType: `extent`,
+        prompt: `You see a triangular Danger sign for sharp curves with a sub-panel reading "↑ 2 km ↑" (vertical arrows flanking 2 km). Which interpretations are correct?`,
+        options: [
+          { id: `A`, text: `The series of dangerous curves extends over a length of 2 km.`, correct: true },
+          { id: `B`, text: `You only reach the first dangerous curve 2 km from now.`, correct: false },
+          { id: `C`, text: `You must adapt your speed before entering the curves (Art. R413-17).`, correct: true },
+          { id: `D`, text: `Overtaking is allowed whenever you feel confident, even with blind forward visibility.`, correct: false }
+        ],
+        explanation: `Correct: A and C. Side arrows (↑ 2 km ↑) indicate the EXTENT (length) of the hazard or restriction, whereas plain "2 km" without arrows indicates distance TO the hazard. Art. R414-11 forbids overtaking on two-way roads when forward visibility in curves is insufficient.`
+      },
+      {
+        id: `d4`,
+        theme: `Usagers & Zones · Zone de rencontre`,
+        signId: `b52-rencontre`,
+        panType: `category`,
+        prompt: `You enter a Zone de rencontre (20 km/h shared zone). Which legal rules apply immediately inside this zone?`,
+        options: [
+          { id: `A`, text: `Maximum speed is capped at 20 km/h.`, correct: true },
+          { id: `B`, text: `Pedestrians are allowed on the roadway and have priority over vehicles.`, correct: true },
+          { id: `C`, text: `All streets are automatically two-way for cyclists and EDPM unless signed otherwise.`, correct: true },
+          { id: `D`, text: `The 20 km/h limit ends automatically at the first intersection inside the zone.`, correct: false }
+        ],
+        explanation: `Correct: A, B, and C. Under Art. R110-2, Zone de rencontre caps speed at 20 km/h, grants pedestrians priority on the carriageway (without loitering), and makes streets two-way for cycles/EDPM. Zone rules stay active until the B53 exit sign—never at internal intersections.`
+      },
+      {
+        id: `d5`,
+        theme: `Panonceaux · Exceptions (Sauf)`,
+        signId: `c12-oneway`,
+        panType: `category`,
+        prompt: `You turn onto a street marked with a square blue One-Way sign (C12) and a "Sauf cyclistes" panonceau underneath. What must you expect?`,
+        options: [
+          { id: `A`, text: `Cyclists may legally ride toward you against the one-way motor traffic flow.`, correct: true },
+          { id: `B`, text: `When overtaking a cyclist in a built-up area, you must leave at least 1 m lateral clearance.`, correct: true },
+          { id: `C`, text: `Cars may also reverse down the street as long as they stay under 20 km/h.`, correct: false },
+          { id: `D`, text: `The square blue sign means you are forbidden from turning left or right at the end of the block.`, correct: false }
+        ],
+        explanation: `Correct: A and B. "Sauf cyclistes" allows two-way cycling against the motor flow, and Art. R414-4 requires ≥ 1 m lateral clearance in built-up areas (1.5 m outside). C is illegal (wrong-way driving), and D confuses square indication (C12 one-way) with round blue obligation (B21-1).`
+      },
+      {
+        id: `d6`,
+        theme: `Intersections & Speed · Multi-Trap`,
+        signId: `b3-no-overtake`,
+        panType: `category`,
+        prompt: `On a two-way rural road (80 km/h), you see a No Overtaking prohibition sign (B3) with a "> 3,5 t" truck panonceau underneath. What is true for your passenger car?`,
+        options: [
+          { id: `A`, text: `The overtaking ban applies only to vehicles exceeding 3.5 t—your car may overtake if markings and visibility allow.`, correct: true },
+          { id: `B`, text: `If a driver starts overtaking you, you must move right and never accelerate (Art. R414-16).`, correct: true },
+          { id: `C`, text: `If overtaking a cyclist, you must keep at least 1.5 m lateral clearance outside built-up areas.`, correct: true },
+          { id: `D`, text: `No overtaking is EVER allowed when a "> 3,5 t" panonceau appears.`, correct: false }
+        ],
+        explanation: `Correct: A, B, and C. Category panonceaux limit the prohibition to vehicles over 3.5 t. D falls for the absolute word trap ("EVER" / toujours / jamais) that ETG exams use to catch careless readers.`
+      }
+    ];
+
+    let appState = {
+      activeFamily: `all`,
+      selectedSignId: `a1-curve`,
+      activePanonceau: `none`,
+      exploredSigns: [],
+      masteredSigns: [],
+      activeDrillId: `d1`,
+      drillAnswers: {},
+      drillChecked: {}
+    };
+
+    function getSignById(id) {
+      for (let i = 0; i < SIGNS.length; i++) {
+        if (SIGNS[i].id === id) return SIGNS[i];
+      }
+      return SIGNS[0];
+    }
+
+    function getDrillById(id) {
+      for (let i = 0; i < DRILLS.length; i++) {
+        if (DRILLS[i].id === id) return DRILLS[i];
+      }
+      return DRILLS[0];
+    }
+
+    function renderSignSvg(svgType, sizeClass) {
+      const cls = sizeClass || `sign-tile-svg`;
+      if (svgType === `danger_curve`) {
+        return `<svg class="${cls}" viewBox="0 0 100 100" aria-hidden="true">
+          <polygon points="50,10 93,86 7,86" class="svg-white" stroke="var(--sign-red)" stroke-width="9" stroke-linejoin="round"/>
+          <path d="M44 76 L44 58 Q44 45 58 37" class="svg-black-stroke" stroke-width="7.5" stroke-linecap="round"/>
+          <polygon points="64,34 52,32 58,44" class="svg-black"/>
+        </svg>`;
+      }
+      if (svgType === `danger_lights`) {
+        return `<svg class="${cls}" viewBox="0 0 100 100" aria-hidden="true">
+          <polygon points="50,10 93,86 7,86" class="svg-white" stroke="var(--sign-red)" stroke-width="9" stroke-linejoin="round"/>
+          <rect x="42" y="34" width="16" height="40" rx="3" class="svg-black"/>
+          <circle cx="50" cy="42" r="4.2" class="svg-red"/>
+          <circle cx="50" cy="54" r="4.2" class="svg-amber"/>
+          <circle cx="50" cy="66" r="4.2" class="svg-green"/>
+        </svg>`;
+      }
+      if (svgType === `danger_priority_right`) {
+        return `<svg class="${cls}" viewBox="0 0 100 100" aria-hidden="true">
+          <polygon points="50,10 93,86 7,86" class="svg-white" stroke="var(--sign-red)" stroke-width="9" stroke-linejoin="round"/>
+          <path d="M50 38 L50 75 M33 57 L67 57" class="svg-black-stroke" stroke-width="7.5" stroke-linecap="butt"/>
+        </svg>`;
+      }
+      if (svgType === `danger_roundabout`) {
+        return `<svg class="${cls}" viewBox="0 0 100 100" aria-hidden="true">
+          <polygon points="50,10 93,86 7,86" class="svg-white" stroke="var(--sign-red)" stroke-width="9" stroke-linejoin="round"/>
+          <circle cx="50" cy="59" r="14" class="svg-black-stroke" stroke-width="5" stroke-dasharray="18 11"/>
+          <polygon points="50,41 44,49 54,50" class="svg-black"/>
+          <polygon points="67,63 59,68 60,58" class="svg-black"/>
+          <polygon points="34,63 39,55 43,64" class="svg-black"/>
+        </svg>`;
+      }
+      if (svgType === `prohib_50`) {
+        return `<svg class="${cls}" viewBox="0 0 100 100" aria-hidden="true">
+          <circle cx="50" cy="50" r="40" class="svg-white" stroke="var(--sign-red)" stroke-width="11"/>
+          <text x="50" y="61" text-anchor="middle" font-family="Public Sans, sans-serif" font-weight="800" font-size="34" class="svg-black">50</text>
+        </svg>`;
+      }
+      if (svgType === `prohib_overtake`) {
+        return `<svg class="${cls}" viewBox="0 0 100 100" aria-hidden="true">
+          <circle cx="50" cy="50" r="40" class="svg-white" stroke="var(--sign-red)" stroke-width="11"/>
+          <rect x="25" y="42" width="18" height="22" rx="3" class="svg-red"/>
+          <rect x="28" y="36" width="12" height="8" rx="2" class="svg-red"/>
+          <rect x="57" y="42" width="18" height="22" rx="3" class="svg-black"/>
+          <rect x="60" y="36" width="12" height="8" rx="2" class="svg-black"/>
+        </svg>`;
+      }
+      if (svgType === `prohib_access`) {
+        return `<svg class="${cls}" viewBox="0 0 100 100" aria-hidden="true">
+          <circle cx="50" cy="50" r="40" class="svg-white" stroke="var(--sign-red)" stroke-width="12"/>
+        </svg>`;
+      }
+      if (svgType === `prohib_no_stop`) {
+        return `<svg class="${cls}" viewBox="0 0 100 100" aria-hidden="true">
+          <circle cx="50" cy="50" r="40" class="svg-blue" stroke="var(--sign-red)" stroke-width="11"/>
+          <line x1="25" y1="25" x2="75" y2="75" class="svg-red-stroke" stroke-width="10"/>
+          <line x1="75" y1="25" x2="25" y2="75" class="svg-red-stroke" stroke-width="10"/>
+        </svg>`;
+      }
+      if (svgType === `oblig_straight`) {
+        return `<svg class="${cls}" viewBox="0 0 100 100" aria-hidden="true">
+          <circle cx="50" cy="50" r="42" class="svg-blue"/>
+          <circle cx="50" cy="50" r="37" class="svg-white-stroke" stroke-width="3"/>
+          <path d="M50 75 L50 28 M34 44 L50 26 L66 44" class="svg-white-stroke" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>`;
+      }
+      if (svgType === `oblig_cycle`) {
+        return `<svg class="${cls}" viewBox="0 0 100 100" aria-hidden="true">
+          <circle cx="50" cy="50" r="42" class="svg-blue"/>
+          <circle cx="50" cy="50" r="37" class="svg-white-stroke" stroke-width="3"/>
+          <circle cx="33" cy="60" r="10" class="svg-white-stroke" stroke-width="3.5"/>
+          <circle cx="67" cy="60" r="10" class="svg-white-stroke" stroke-width="3.5"/>
+          <path d="M33 60 L47 44 L61 44 L67 60 M47 44 L51 60 L33 60 M45 38 L52 38 M60 39 L65 39" class="svg-white-stroke" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>`;
+      }
+      if (svgType === `oblig_min30`) {
+        return `<svg class="${cls}" viewBox="0 0 100 100" aria-hidden="true">
+          <circle cx="50" cy="50" r="42" class="svg-blue"/>
+          <circle cx="50" cy="50" r="37" class="svg-white-stroke" stroke-width="3"/>
+          <text x="50" y="62" text-anchor="middle" font-family="Public Sans, sans-serif" font-weight="800" font-size="36" class="svg-white">30</text>
+        </svg>`;
+      }
+      if (svgType === `oblig_chains`) {
+        return `<svg class="${cls}" viewBox="0 0 100 100" aria-hidden="true">
+          <circle cx="50" cy="50" r="42" class="svg-blue"/>
+          <circle cx="50" cy="50" r="37" class="svg-white-stroke" stroke-width="3"/>
+          <circle cx="50" cy="50" r="22" class="svg-white-stroke" stroke-width="6"/>
+          <circle cx="50" cy="50" r="10" class="svg-white"/>
+          <path d="M50 25 L50 32 M50 68 L50 75 M25 50 L32 50 M68 50 L75 50 M33 33 L38 38 M62 62 L67 67 M67 33 L62 38 M38 62 L33 67" class="svg-blue-stroke" stroke-width="3.5"/>
+        </svg>`;
+      }
+      if (svgType === `indic_motorway`) {
+        return `<svg class="${cls}" viewBox="0 0 100 100" aria-hidden="true">
+          <rect x="10" y="10" width="80" height="80" rx="6" class="svg-blue"/>
+          <rect x="14" y="14" width="72" height="72" rx="3" class="svg-white-stroke" stroke-width="2.5"/>
+          <polygon points="24,78 44,24 48,24 39,78" class="svg-white"/>
+          <polygon points="76,78 56,24 52,24 61,78" class="svg-white"/>
+          <rect x="20" y="42" width="60" height="7" class="svg-white"/>
+        </svg>`;
+      }
+      if (svgType === `indic_escape`) {
+        return `<svg class="${cls}" viewBox="0 0 100 100" aria-hidden="true">
+          <rect x="10" y="10" width="80" height="80" rx="6" class="svg-blue"/>
+          <rect x="14" y="14" width="72" height="72" rx="3" class="svg-white-stroke" stroke-width="2.5"/>
+          <path d="M36 78 L36 25" class="svg-white-stroke" stroke-width="8"/>
+          <path d="M36 58 L62 42 L62 24" class="svg-white-stroke" stroke-width="7"/>
+          <rect x="55" y="20" width="7" height="7" class="svg-red"/>
+          <rect x="62" y="20" width="7" height="7" class="svg-white"/>
+          <rect x="55" y="27" width="7" height="7" class="svg-white"/>
+          <rect x="62" y="27" width="7" height="7" class="svg-red"/>
+        </svg>`;
+      }
+      if (svgType === `indic_oneway`) {
+        return `<svg class="${cls}" viewBox="0 0 100 100" aria-hidden="true">
+          <rect x="10" y="10" width="80" height="80" rx="6" class="svg-blue"/>
+          <rect x="14" y="14" width="72" height="72" rx="3" class="svg-white-stroke" stroke-width="2.5"/>
+          <path d="M50 76 L50 27 M34 43 L50 25 L66 43" class="svg-white-stroke" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>`;
+      }
+      /* indic_rencontre */
+      return `<svg class="${cls}" viewBox="0 0 100 100" aria-hidden="true">
+        <rect x="10" y="16" width="80" height="68" rx="6" class="svg-blue"/>
+        <rect x="14" y="20" width="72" height="60" rx="3" class="svg-white-stroke" stroke-width="2.5"/>
+        <circle cx="67" cy="36" r="11" class="svg-white" stroke="var(--sign-red)" stroke-width="3.5"/>
+        <text x="67" y="40" text-anchor="middle" font-family="Public Sans, sans-serif" font-weight="800" font-size="11" class="svg-black">20</text>
+        <circle cx="32" cy="40" r="4" class="svg-white"/>
+        <path d="M32 45 L32 60 M26 51 L38 51 M32 60 L27 72 M32 60 L37 72" class="svg-white-stroke" stroke-width="3" stroke-linecap="round"/>
+        <rect x="48" y="56" width="26" height="11" rx="2" class="svg-white"/>
+        <circle cx="53" cy="68" r="3" class="svg-white"/>
+        <circle cx="69" cy="68" r="3" class="svg-white"/>
+      </svg>`;
+    }
+
+    function renderPanonceauIconSvg(iconName) {
+      if (iconName === `truck`) {
+        return `<svg width="26" height="18" viewBox="0 0 26 18" aria-hidden="true">
+          <rect x="1" y="3" width="15" height="10" class="svg-black"/>
+          <polygon points="16,5 22,5 24,9 24,13 16,13" class="svg-black"/>
+          <circle cx="6" cy="15" r="2.2" class="svg-black"/>
+          <circle cx="20" cy="15" r="2.2" class="svg-black"/>
+        </svg>`;
+      }
+      if (iconName === `bike`) {
+        return `<svg width="24" height="18" viewBox="0 0 24 18" aria-hidden="true">
+          <circle cx="6" cy="13" r="4" class="svg-black-stroke" stroke-width="2"/>
+          <circle cx="18" cy="13" r="4" class="svg-black-stroke" stroke-width="2"/>
+          <path d="M6 13 L11 6 L16 6 L18 13 M11 6 L12 13 L6 13" class="svg-black-stroke" stroke-width="1.8"/>
+        </svg>`;
+      }
+      return ``;
+    }
+
+    function renderSpatialDiagram(sign, panKey, combo) {
+      const el = document.getElementById(`spatial-diagram-svg`);
+      if (!el) return;
+
+      if (combo.panType === `invalid`) {
+        el.innerHTML = `
+          <rect x="0" y="34" width="380" height="22" class="svg-road"/>
+          <line x1="0" y1="45" x2="380" y2="45" stroke="var(--sign-white)" stroke-width="2" stroke-dasharray="10 8"/>
+          <rect x="55" y="18" width="270" height="50" fill="var(--error-container)" stroke="var(--error)" stroke-width="2"/>
+          <text x="190" y="40" text-anchor="middle" font-family="Public Sans, sans-serif" font-weight="800" font-size="11" fill="var(--error)">INVALID COMBINATION FOR THIS SIGN</text>
+          <text x="190" y="56" text-anchor="middle" font-family="Public Sans, sans-serif" font-weight="600" font-size="10" fill="var(--on-surface)">Use distance, extent, or category instead</text>
+        `;
+        return;
+      }
+
+      const isDangerBase = (sign.family === `danger` && panKey === `none`);
+      const isDelayed = (panKey === `distance`);
+      const isExtent = (panKey === `extent`);
+      const isRappel = (panKey === `rappel`);
+
+      let zoneStart = 68;
+      let zoneWidth = 285;
+      let zoneLabel = `ACTIVE IMMEDIATELY AT SIGN`;
+
+      if (isDangerBase) {
+        zoneStart = 200;
+        zoneWidth = 155;
+        zoneLabel = `HAZARD ~150m (50m IN TOWN)`;
+      } else if (isDelayed) {
+        zoneStart = 210;
+        zoneWidth = 145;
+        zoneLabel = `RULE STARTS AT ${combo.panText || '150 m'}`;
+      } else if (isExtent) {
+        zoneStart = 68;
+        zoneWidth = 240;
+        zoneLabel = `CONTINUOUS: ${combo.panText || 'EXTENT'}`;
+      } else if (isRappel) {
+        zoneStart = 18;
+        zoneWidth = 335;
+        zoneLabel = `ALREADY IN EFFECT BEFORE & AFTER SIGN`;
+      } else if (panKey === `category`) {
+        zoneStart = 68;
+        zoneWidth = 285;
+        zoneLabel = `FILTERED BY CATEGORY / CONDITION`;
+      }
+
+      const signMarkerX = 68;
+      const zoneColor = sign.family === `prohibition` ? `var(--sign-red)` : sign.family === `danger` ? `var(--sign-amber)` : `var(--sign-blue)`;
+
+      el.innerHTML = `
+        <rect x="10" y="38" width="360" height="24" class="svg-road"/>
+        <line x1="18" y1="50" x2="362" y2="50" stroke="var(--sign-white)" stroke-width="2" stroke-dasharray="10 8"/>
+        <rect x="${zoneStart}" y="38" width="${zoneWidth}" height="24" fill="${zoneColor}" fill-opacity="0.35"/>
+        <line x1="${zoneStart}" y1="34" x2="${zoneStart}" y2="66" stroke="${zoneColor}" stroke-width="3"/>
+        <rect x="${signMarkerX - 4}" y="12" width="8" height="26" class="svg-post"/>
+        <circle cx="${signMarkerX}" cy="12" r="8" fill="${zoneColor}" stroke="var(--sign-white)" stroke-width="2"/>
+        <text x="${signMarkerX}" y="79" text-anchor="middle" font-family="Public Sans, sans-serif" font-weight="700" font-size="10" fill="var(--on-surface)">SIGN</text>
+        <text x="215" y="23" text-anchor="middle" font-family="Public Sans, sans-serif" font-weight="800" font-size="10.5" fill="var(--on-surface)">${zoneLabel}</text>
+      `;
+    }
+
+    function updateKpis() {
+      const expEl = document.getElementById(`kpi-explored`);
+      const masEl = document.getElementById(`kpi-mastered`);
+      const drlEl = document.getElementById(`kpi-drill`);
+
+      if (expEl) expEl.textContent = `${appState.exploredSigns.length} / ${SIGNS.length}`;
+      if (masEl) masEl.textContent = `${appState.masteredSigns.length} / ${SIGNS.length}`;
+
+      let score = 0;
+      for (let i = 0; i < DRILLS.length; i++) {
+        const d = DRILLS[i];
+        if (appState.drillChecked[d.id] && isDrillAnswerExact(d, appState.drillAnswers[d.id] || [])) {
+          score++;
+        }
+      }
+      if (drlEl) drlEl.textContent = `${score} / ${DRILLS.length}`;
+    }
+
+    function isDrillAnswerExact(drill, selectedIds) {
+      const correctIds = drill.options.filter(function(o) { return o.correct; }).map(function(o) { return o.id; });
+      if (selectedIds.length !== correctIds.length) return false;
+      for (let i = 0; i < correctIds.length; i++) {
+        if (selectedIds.indexOf(correctIds[i]) === -1) return false;
+      }
+      return true;
+    }
+
+    function renderGallery() {
+      const gallery = document.getElementById(`sign-gallery`);
+      if (!gallery) return;
+
+      const filtered = SIGNS.filter(function(s) {
+        return appState.activeFamily === `all` || s.family === appState.activeFamily;
+      });
+
+      let html = ``;
+      for (let i = 0; i < filtered.length; i++) {
+        const s = filtered[i];
+        const isSelected = s.id === appState.selectedSignId;
+        const isMastered = appState.masteredSigns.indexOf(s.id) !== -1;
+        html += `
+          <button type="button" class="sign-tile" role="option" aria-selected="${isSelected}" aria-pressed="${isSelected}" onclick="selectSign('${s.id}')">
+            <div class="sign-tile-head">
+              ${renderSignSvg(s.svgType, `sign-tile-svg`)}
+              <span class="sign-tile-code">${s.code}</span>
+            </div>
+            <div>
+              <div class="sign-tile-name">${s.name}</div>
+              <div class="sign-tile-fr">${s.frName}</div>
+            </div>
+            ${isMastered ? `<span class="sign-tile-status">Mastered</span>` : ``}
+          </button>
+        `;
+      }
+      gallery.innerHTML = html;
+
+      const filterBtns = document.querySelectorAll(`[data-filter]`);
+      for (let i = 0; i < filterBtns.length; i++) {
+        const btn = filterBtns[i];
+        const match = btn.getAttribute(`data-filter`) === appState.activeFamily;
+        btn.classList.toggle(`btn--active`, match);
+      }
+
+      const shapeCards = document.querySelectorAll(`.shape-card`);
+      for (let i = 0; i < shapeCards.length; i++) {
+        const card = shapeCards[i];
+        const match = card.getAttribute(`data-family`) === appState.activeFamily;
+        card.setAttribute(`aria-pressed`, match ? `true` : `false`);
+      }
+    }
+
+    function renderWorkbench() {
+      const sign = getSignById(appState.selectedSignId);
+      const panKey = appState.activePanonceau;
+      const combo = sign.combos[panKey] || sign.combos.none;
+
+      const mainSignEl = document.getElementById(`stage-main-sign`);
+      if (mainSignEl) mainSignEl.innerHTML = renderSignSvg(sign.svgType, ``);
+
+      const panEl = document.getElementById(`stage-panonceau`);
+      if (panEl) {
+        panEl.className = `panonceau-plate`;
+        if (combo.panType === `none`) {
+          panEl.classList.add(`panonceau-plate--empty`);
+          panEl.innerHTML = `No panonceau attached`;
+        } else if (combo.panType === `invalid`) {
+          panEl.classList.add(`panonceau-plate--invalid`);
+          panEl.innerHTML = `Invalid sub-panel for ${sign.code}`;
+        } else {
+          const iconHtml = combo.panIcon ? renderPanonceauIconSvg(combo.panIcon) : ``;
+          panEl.innerHTML = `${iconHtml}<span>${combo.panText || combo.panLabel}</span>`;
+        }
+      }
+
+      const catBtn = document.getElementById(`btn-pan-category`);
+      if (catBtn && sign.combos.category) {
+        catBtn.textContent = sign.combos.category.panLabel;
+      }
+
+      const panBtns = document.querySelectorAll(`[data-pan]`);
+      for (let i = 0; i < panBtns.length; i++) {
+        const b = panBtns[i];
+        const isCurrent = b.getAttribute(`data-pan`) === panKey;
+        b.classList.toggle(`btn--active`, isCurrent);
+      }
+
+      const tagEl = document.getElementById(`detail-family-tag`);
+      if (tagEl) {
+        tagEl.className = `tag`;
+        if (sign.family === `prohibition`) tagEl.classList.add(`tag--error`);
+        else if (sign.family === `danger`) tagEl.classList.add(`tag--warning`);
+        tagEl.textContent = `${sign.familyLabel} · ${sign.code}`;
+      }
+
+      const titleEl = document.getElementById(`detail-title`);
+      if (titleEl) titleEl.textContent = `${sign.name} (${sign.frName})`;
+
+      const subEl = document.getElementById(`detail-subtitle`);
+      if (subEl) subEl.textContent = combo.panType === `none` ? `Base sign without sub-panel` : `Modified with panonceau: ${combo.panLabel}`;
+
+      const badgeEl = document.getElementById(`detail-combo-badge`);
+      if (badgeEl) {
+        badgeEl.className = `tag`;
+        if (combo.panType === `invalid`) {
+          badgeEl.classList.add(`tag--error`);
+          badgeEl.textContent = `Invalid Pairing`;
+        } else if (combo.panType === `none`) {
+          badgeEl.classList.add(`tag--positive`);
+          badgeEl.textContent = `Base Rule`;
+        } else {
+          badgeEl.classList.add(`tag--warning`);
+          badgeEl.textContent = `Modified Scope`;
+        }
+      }
+
+      const lockEl = document.getElementById(`detail-lock-in`);
+      if (lockEl) lockEl.textContent = combo.lockIn;
+
+      const startsEl = document.getElementById(`detail-starts`);
+      if (startsEl) startsEl.textContent = combo.starts;
+
+      const endsEl = document.getElementById(`detail-ends`);
+      if (endsEl) endsEl.textContent = combo.ends;
+
+      const appliesEl = document.getElementById(`detail-applies`);
+      if (appliesEl) appliesEl.textContent = combo.applies;
+
+      const legalEl = document.getElementById(`detail-legal`);
+      if (legalEl) legalEl.textContent = combo.legal;
+
+      const artEl = document.getElementById(`detail-article`);
+      if (artEl) artEl.textContent = `Source reference: ${sign.article}`;
+
+      const trapEl = document.getElementById(`detail-trap`);
+      if (trapEl) trapEl.textContent = combo.trap;
+
+      const isMastered = appState.masteredSigns.indexOf(sign.id) !== -1;
+      const masBtn = document.getElementById(`btn-mastered`);
+      const masFb = document.getElementById(`mastered-feedback`);
+      if (masBtn) {
+        masBtn.textContent = isMastered ? `Mastered (click to unmark)` : `Mark sign as mastered`;
+        masBtn.classList.toggle(`btn--secondary`, isMastered);
+      }
+      if (masFb) {
+        masFb.textContent = isMastered ? `Saved to your mastered list.` : ``;
+      }
+
+      renderSpatialDiagram(sign, panKey, combo);
+    }
+
+    function renderDrillSidebar() {
+      const side = document.getElementById(`drill-sidebar`);
+      if (!side) return;
+      let html = ``;
+      for (let i = 0; i < DRILLS.length; i++) {
+        const d = DRILLS[i];
+        const active = d.id === appState.activeDrillId;
+        const checked = !!appState.drillChecked[d.id];
+        const exact = checked && isDrillAnswerExact(d, appState.drillAnswers[d.id] || []);
+        const statusTxt = !checked ? `Unanswered` : exact ? `1/1 Pass` : `0/1 Trap`;
+        html += `
+          <button type="button" class="btn btn--secondary drill-nav-btn ${active ? 'btn--active' : ''}" onclick="selectDrill('${d.id}')">
+            <span>Q${i + 1} · ${d.theme.split('·')[0].trim()}</span>
+            <span class="tag ${!checked ? '' : exact ? 'tag--positive' : 'tag--error'}">${statusTxt}</span>
+          </button>
+        `;
+      }
+      side.innerHTML = html;
+    }
+
+    function renderDrillCard() {
+      const drill = getDrillById(appState.activeDrillId);
+      const idx = DRILLS.indexOf(drill) + 1;
+
+      const themeEl = document.getElementById(`drill-q-theme`);
+      if (themeEl) themeEl.textContent = drill.theme;
+
+      const cntEl = document.getElementById(`drill-q-counter`);
+      if (cntEl) cntEl.textContent = `Question ${idx} of ${DRILLS.length}`;
+
+      const visEl = document.getElementById(`drill-visual-bar`);
+      if (visEl) {
+        const sign = getSignById(drill.signId);
+        const combo = sign.combos[drill.panType] || sign.combos.none;
+        const panPreview = combo.panType !== `none` ? `<span class="panonceau-plate" style="min-width: 110px; font-size: 0.8125rem;">${combo.panText || combo.panLabel}</span>` : `<span style="font-size: 0.8125rem; color: var(--on-surface-variant);">Base sign</span>`;
+        visEl.innerHTML = `
+          ${renderSignSvg(sign.svgType, `sign-tile-svg`)}
+          <div style="display: grid; gap: 4px;">
+            <strong>${sign.code} · ${sign.name}</strong>
+            ${panPreview}
+          </div>
+        `;
+      }
+
+      const promptEl = document.getElementById(`drill-q-prompt`);
+      if (promptEl) promptEl.textContent = drill.prompt;
+
+      const selected = appState.drillAnswers[drill.id] || [];
+      const isChecked = !!appState.drillChecked[drill.id];
+      const optsEl = document.getElementById(`drill-options`);
+      if (optsEl) {
+        let html = ``;
+        for (let i = 0; i < drill.options.length; i++) {
+          const opt = drill.options[i];
+          const isPicked = selected.indexOf(opt.id) !== -1;
+          let stateCls = ``;
+          let badge = ``;
+          if (isChecked) {
+            if (opt.correct) {
+              stateCls = `option-item--correct`;
+              badge = `<span class="tag tag--positive" style="margin-left: auto;">Required</span>`;
+            } else if (isPicked && !opt.correct) {
+              stateCls = `option-item--wrong`;
+              badge = `<span class="tag tag--error" style="margin-left: auto;">Trap</span>`;
+            }
+          }
+          html += `
+            <label class="option-item ${stateCls}">
+              <input type="checkbox" value="${opt.id}" ${isPicked ? 'checked' : ''} ${isChecked ? 'disabled' : ''} onchange="toggleDrillOption('${drill.id}', '${opt.id}', this.checked)">
+              <span><strong>${opt.id}.</strong> ${opt.text}</span>
+              ${badge}
+            </label>
+          `;
+        }
+        optsEl.innerHTML = html;
+      }
+
+      const submitBtn = document.getElementById(`drill-submit-btn`);
+      if (submitBtn) {
+        submitBtn.disabled = isChecked || selected.length === 0;
+        submitBtn.textContent = isChecked ? `Answered` : `Check answer`;
+      }
+
+      const fbEl = document.getElementById(`drill-feedback`);
+      if (fbEl) {
+        if (!isChecked) {
+          fbEl.style.display = `none`;
+          fbEl.innerHTML = ``;
+        } else {
+          const exact = isDrillAnswerExact(drill, selected);
+          fbEl.style.display = `grid`;
+          fbEl.className = `inset ${exact ? 'inset--positive' : 'inset--trap'}`;
+          fbEl.innerHTML = `
+            <span class="inset-label">${exact ? '1 / 1 Point — Exact Match!' : '0 / 1 Point — Zero Partial Credit Trap'}</span>
+            <p>${drill.explanation}</p>
+          `;
+        }
+      }
+    }
+
+    async function persistState() {
+      if (window.notebookAppApi && typeof window.notebookAppApi.setAppState === `function`) {
+        try {
+          await window.notebookAppApi.setAppState(appState);
+        } catch (err) {
+          /* Ignore transient storage error */
+        }
+      }
+    }
+
+    function selectFamilyFilter(family, shouldScroll) {
+      appState.activeFamily = family;
+      const firstMatch = SIGNS.filter(function(s) {
+        return family === `all` || s.family === family;
+      })[0];
+      if (firstMatch && SIGNS.filter(function(s) { return s.id === appState.selectedSignId && (family === `all` || s.family === family); }).length === 0) {
+        appState.selectedSignId = firstMatch.id;
+        appState.activePanonceau = `none`;
+        if (appState.exploredSigns.indexOf(firstMatch.id) === -1) {
+          appState.exploredSigns.push(firstMatch.id);
+        }
+      }
+      renderGallery();
+      renderWorkbench();
+      updateKpis();
+      persistState();
+      if (shouldScroll) {
+        const comp = document.getElementById(`composer-section`);
+        if (comp) comp.scrollIntoView({ behavior: `smooth`, block: `start` });
+      }
+    }
+
+    function selectSign(signId) {
+      appState.selectedSignId = signId;
+      if (appState.exploredSigns.indexOf(signId) === -1) {
+        appState.exploredSigns.push(signId);
+      }
+      renderGallery();
+      renderWorkbench();
+      updateKpis();
+      persistState();
+    }
+
+    function selectPanonceau(panKey) {
+      appState.activePanonceau = panKey;
+      renderWorkbench();
+      persistState();
+    }
+
+    function toggleMasteredCurrent() {
+      const id = appState.selectedSignId;
+      const idx = appState.masteredSigns.indexOf(id);
+      if (idx === -1) {
+        appState.masteredSigns.push(id);
+      } else {
+        appState.masteredSigns.splice(idx, 1);
+      }
+      renderGallery();
+      renderWorkbench();
+      updateKpis();
+      persistState();
+    }
+
+    function selectDrill(drillId) {
+      appState.activeDrillId = drillId;
+      renderDrillSidebar();
+      renderDrillCard();
+      persistState();
+    }
+
+    function toggleDrillOption(drillId, optId, isChecked) {
+      if (appState.drillChecked[drillId]) return;
+      const arr = appState.drillAnswers[drillId] || [];
+      const idx = arr.indexOf(optId);
+      if (isChecked && idx === -1) arr.push(optId);
+      if (!isChecked && idx !== -1) arr.splice(idx, 1);
+      appState.drillAnswers[drillId] = arr;
+      renderDrillCard();
+      persistState();
+    }
+
+    function submitDrillAnswer() {
+      const drill = getDrillById(appState.activeDrillId);
+      const selected = appState.drillAnswers[drill.id] || [];
+      if (selected.length === 0) return;
+      appState.drillChecked[drill.id] = true;
+      renderDrillSidebar();
+      renderDrillCard();
+      updateKpis();
+      persistState();
+    }
+
+    function nextDrillQuestion() {
+      const curIdx = DRILLS.indexOf(getDrillById(appState.activeDrillId));
+      const nextIdx = (curIdx + 1) % DRILLS.length;
+      appState.activeDrillId = DRILLS[nextIdx].id;
+      renderDrillSidebar();
+      renderDrillCard();
+      persistState();
+    }
+
+    function handleResetProgress(btn) {
+      if (!btn) return;
+      const statusEl = document.getElementById(`reset-status`);
+      if (btn.dataset.armed !== `true`) {
+        btn.dataset.armed = `true`;
+        btn.textContent = `Click again to confirm reset`;
+        if (statusEl) statusEl.textContent = `This clears mastered signs and drill scores.`;
+        return;
+      }
+      btn.dataset.armed = `false`;
+      btn.textContent = `Reset study progress`;
+      if (statusEl) statusEl.textContent = `Progress reset.`;
+
+      appState = {
+        activeFamily: `all`,
+        selectedSignId: `a1-curve`,
+        activePanonceau: `none`,
+        exploredSigns: [`a1-curve`],
+        masteredSigns: [],
+        activeDrillId: `d1`,
+        drillAnswers: {},
+        drillChecked: {}
+      };
+      renderGallery();
+      renderWorkbench();
+      renderDrillSidebar();
+      renderDrillCard();
+      updateKpis();
+      persistState();
+    }
+
+    async function initApp() {
+      if (window.notebookAppApi && typeof window.notebookAppApi.getAppState === `function`) {
+        try {
+          const saved = await window.notebookAppApi.getAppState();
+          if (saved && typeof saved === `object`) {
+            appState = {
+              activeFamily: saved.activeFamily || `all`,
+              selectedSignId: saved.selectedSignId || `a1-curve`,
+              activePanonceau: saved.activePanonceau || `none`,
+              exploredSigns: Array.isArray(saved.exploredSigns) ? saved.exploredSigns : [`a1-curve`],
+              masteredSigns: Array.isArray(saved.masteredSigns) ? saved.masteredSigns : [],
+              activeDrillId: saved.activeDrillId || `d1`,
+              drillAnswers: saved.drillAnswers || {},
+              drillChecked: saved.drillChecked || {}
+            };
+          }
+        } catch (err) {
+          /* Start with default state */
+        }
+      }
+
+      if (appState.exploredSigns.indexOf(appState.selectedSignId) === -1) {
+        appState.exploredSigns.push(appState.selectedSignId);
+      }
+
+      renderGallery();
+      renderWorkbench();
+      renderDrillSidebar();
+      renderDrillCard();
+      updateKpis();
+
+      if (window.notebookAppApi && typeof window.notebookAppApi.notifyAppReady === `function`) {
+        window.notebookAppApi.notifyAppReady();
+      }
+    }
+
+    initApp();
+  </script>
+<a href="../index.html#/tools" style="position:fixed;left:16px;bottom:16px;z-index:9999;background:#ff6b4a;color:#fff;font:800 15px/1 Nunito,system-ui,sans-serif;padding:12px 18px;border-radius:999px;text-decoration:none;box-shadow:0 4px 0 #b9432c">← Back to study site</a>
+</body>
+</html>
