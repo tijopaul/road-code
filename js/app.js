@@ -187,7 +187,7 @@
         <div class="hero-inner">
           <div class="hero-text">
             <h1>${hello}! Ready to ace the Code? 🚗💨</h1>
-            <p>${total} lessons across 10 themes, ${QUIZ.length} practice questions, a timed mock exam and interactive tools. Everything here comes from your Ornikar notes.</p>
+            <p>${total} lessons across 10 themes, ${QUIZ.length} practice questions, a timed mock exam and interactive tools.</p>
             <div class="row">
               ${cont ? `<a class="btn" href="${lessonHref(cont)}">▶ ${last && cont === last ? 'Continue' : 'Start'}: ${esc(cont.lesson.title)}</a>` : `<a class="btn" href="#/exam">🏆 Take a mock exam</a>`}
               <a class="btn alt" href="#/quiz/all">🧩 Quick quiz</a>
